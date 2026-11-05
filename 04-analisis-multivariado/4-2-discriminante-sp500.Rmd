@@ -1,0 +1,242 @@
+---
+title: "Análisis de acciones SP500"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2023-05-25"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r, include=FALSE, message=FALSE}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(lmtest)
+library(stats)
+library(FactoMineR)
+library(factoextra)
+library(psych)
+library(ggcorrplot)
+library(cluster)
+library(dendextend)
+library(NbClust)
+library(fpc)
+library(MASS)
+library(corrplot)
+library(tidyverse)
+library("GGally")  
+library(klaR)
+library(foreign)
+library(DataExplorer)
+library(knitr)
+library(MVN)
+```
+
+
+La base de datos SP500.txt contiene el porcentaje de retornos desde inicios del
+2001 a finales de 2005. Para cada fecha se tiene el porcentaje de retornos record para cada uno de los 5 días previos, el volumen de transacciones del día previo, el porcentaje de retorno del día  actual y un indicador binario de si el mercado iba hacia arriba o hacia abajo en esa fecha. 
+
+Realizaremos un análisis de discriminante para desarrollar predicciones sobre las acciones de acuerdo a los datos disponibles.
+
+
+### Análisis Exploratorio ###
+
+
+```{r, message=FALSE, include=FALSE}
+base=read.table("https://joseperusquia.github.io/recursos/multivariado/datos/SP500.txt")
+datos=as.data.frame(base)
+```
+
+```{r}
+head(datos)
+```
+
+
+
+```{r}
+describe(datos)
+```
+
+Podemos notar que para las variables Lag 1, Lag2, Lag 3, Lag 4 y Lag 5 las estadísticas obtenidas son muy parecidas y en la mayoría de los casos iguales para estas variables.
+
+Visualizaremos estas variables entre sí para ver si estan relacionadas 
+
+```{r,  warning=FALSE,fig.width=8, fig.height=5}
+ ggpairs(datos,columns=2:5,aes(color=Direction,alpha=0.5),
+ upper= list(continuous= wrap("cor",size=2.5)))
+```
+
+
+```{r, warning=FALSE, fig.width=8, fig.height=5}
+ggpairs(datos, columns = 6:9, aes(color = Direction, alpha = 0.5),
+        upper = list(continuous = wrap("cor", size = 2.5))) 
+```
+
+Graficaremos su densidad para ver como se comporta y sí podemos deducir normalidad.
+
+
+```{r, fig.width=8, fig.height=5}
+plot_density(datos[, -1])
+```
+
+No podemos asegurar Normalidad ya que las gráficas indican que no se cumple este criterio, por lo tanto haremos prueba de hipotesis para concluir nuestra infenrencia.
+
+
+### Normalidad de las variables ###
+
+Verificaremos la Normalidad de las variables ya que este es un suspuesto en el análisis de discriminante lineal, como podemos observar la ultima variable no es númerica, asi que la convertiremos en una variable binaria de 0 y 1
+
+
+```{r, include=FALSE}
+datos %>% 
+  mutate(Valor = paste("valor", Direction, sep = "_"))
+```
+
+```{r, message=FALSE, include=FALSE}
+datos=datos %>% 
+  mutate(Valor_1 = paste("valor", Direction, sep = "_"),
+         valor_1 = 1 
+         )%>%
+spread(key = Valor_1, value = valor_1, fill = 0)
+```
+
+```{r}
+datos_1=dplyr::select(datos, - c(Direction, valor_Down))
+datos_1=datos_1%>%
+  rename(Direction= valor_Up)
+head(datos_1)
+```
+
+Donde el valor de la variable Direction es 1 si el valor subió y 0 si el valor bajo.
+
+
+```{r, fig.width=8, fig.height=5}
+royston_test <- mvn(data = datos_1, mvnTest = "royston", multivariatePlot = "qq")
+```
+
+
+```{r}
+royston_test$univariateNormality
+```
+
+
+```{r}
+royston_test$multivariateNormality
+```
+
+Podemos concluir que no existe normalidad univariada ni multivariada, por lo cual podemos intuir que el discriminante lineal no hará una buena clasificación de los datos ya que este método no es robusto en ese sentido.
+
+**Bases de Entrenamiento y Prueba**
+
+
+Primero entrenaremos nuestro modelo con datos del 2001-2004 y nuestros datos de prueba serán los del año 2005.
+
+Solo utilizaremos 3 variables para nuestro modelo, ya que la variable Direction es una clasificación binaria de la variable Today además que para las variables Lag4 y Lag5  los datos son muy parecidos
+
+```{r}
+datos_entrena=filter(datos_1, Year <= 2004  )
+datos_prueba=filter(datos_1, Year > 2004)
+```
+
+
+**Creación del modelo lineal**
+
+Creamos el modelo lineal con las variables Lag1, Lag2 y Lag3 para la clasificación de la variable Dirección, es decir si sbe o baja el valor de la acción.
+
+```{r}
+modelo_lin=lda(Direction ~ Lag1 + Lag2 + Lag3, data= datos_entrena)
+modelo_lin
+```
+
+Al interpertar el modelo obtenemos que los datos de la variable Direction tiene casi la misma probabilidad de estar en el grupo donde subió o bajo la acción
+ 
+
+Graficaremos el modelo
+
+```{r, fig.width=8, fig.height=5}
+partimat(factor(Direction) ~ Lag1+Lag2+Lag3, data = datos_entrena, method= "lda", plot.matrix=FALSE)
+```
+
+### Predicción ###
+
+Realizamos la predicción de los valores con los datos de prueba
+
+```{r}
+predicción= predict(modelo_lin, datos_prueba)
+predicción$class[1:20]
+```
+
+Como podemos observar la predicción es que los valores suban en los primeros 10 observaciones, para visualizarlo de mejor manera lo hacemos un data frame
+
+```{r}
+as.data.frame(predicción)[1:20,]
+```
+
+ Obteniendo la matriz de confusión
+ 
+ 
+```{r}
+table(predicción$class, datos_prueba$Direction)
+```
+
+Sacando el promedio de exactitud de la predicción
+
+```{r}
+mean(predicción$class== datos_prueba$Direction)
+```
+
+Podemos notar que se acerca al 60% de exactitud en la predicción, por lo tanto nuestro modelo no es muy bueno, es algo de esperarse ya que no se cumplen los supuestos de Normalidad en las variables.
+
+
+**Creación del Modelo Cuadratico**
+
+Ya que el modelo lineal no fue tan bueno haremos un modelo cuadratico 
+
+```{r}
+modelo_cua=qda(Direction ~ Lag1 + Lag2 + Lag3, data= datos_entrena)
+modelo_cua
+```
+
+
+```{r, fig.width=8, fig.height=5}
+partimat(factor(Direction) ~ Lag1+Lag2+Lag3, data = datos_entrena, method= "qda", plot.matrix=FALSE)
+```
+
+**Hacemos la Predicción con el modelo cudratico usando la muestra de prueba**
+
+```{r}
+predicción_cua= predict(modelo_cua, datos_prueba)
+predicción_cua$class[1:10]
+```
+
+```{r}
+as.data.frame(predicción_cua)[1:10,]
+```
+Haciendo la matriz de confusión
+
+```{r}
+table(predicción_cua$class, datos_prueba$Direction)
+```
+
+```{r}
+mean(predicción_cua$class== datos_prueba$Direction)
+```
+
+**Conclusiones**
+
+```{r}
+mean(predicción$class== datos_prueba$Direction)
+mean(predicción_cua$class== datos_prueba$Direction)
+```
+
+
+En conclusión podemos observar que ambos discriminadores tienen una precisión similar de casi el 60%, es importante mencionar que este valor puedo ser afectado ya que no existe normalidad en las variables, el cual es un supuesto al aplicar análisis de discriminante, los resultados obtenidos no son concluyentes sobre la predicción del valor de las acciones.
+
+
+
+
+
+
+
+

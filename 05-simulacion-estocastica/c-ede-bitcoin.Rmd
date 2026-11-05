@@ -1,0 +1,118 @@
+---
+title: "Simulación de EDEs con Datos de Bitcoin (BTC-USD)"
+author: "Ayudantía de Procesos Estocásticos"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    number_sections: true
+geometry: margin=2cm
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center',
+  fig.width = 6.5,
+  fig.height = 4.2
+)
+```
+
+# Carga de Librerías y Descarga de Datos
+
+```{r datos}
+# 1. Cargamos librerías
+if (!require("quantmod")) install.packages("quantmod")
+if (!require("sde")) install.packages("sde")
+
+library(quantmod)
+library(sde)
+
+# 2. Bajar datos de BTC (365 días)
+ticker <- "BTC-USD"
+# solo un año
+getSymbols(ticker, src = "yahoo", from = Sys.Date() - 365, to = Sys.Date())
+
+# Extraer precios de cierre y quitar NAs
+precios_btc <- as.numeric(na.omit(Cl(get(ticker))))
+```
+
+# Estimación de Parámetros de la EDE
+
+```{r parametros}
+# 3. Estimación de rendimientos y parámetros
+rend_log <- diff(log(precios_btc))
+
+media_diaria <- mean(rend_log)
+sd_diaria    <- sd(rend_log)
+
+# Anualizamos para cripto (365 días)
+sigma_btc <- sd_diaria * sqrt(365)
+mu_btc    <- (media_diaria * 365) + (0.5 * sigma_btc^2)
+S0        <- tail(precios_btc, 1)
+
+cat("=== PARÁMETROS ESTIMADOS DE BTC ===\n")
+cat("Precio actual (X0):", round(S0, 2), "USD\n")
+cat("Deriva (mu):", round(mu_btc * 100, 2), "%\n")
+cat("Volatilidad (sigma):", round(sigma_btc * 100, 2), "%\n\n")
+
+# 4. Expresiones para sde.sim
+f_drift <- parse(text = paste0(round(mu_btc, 4), " * x"))
+f_sigma <- parse(text = paste0(round(sigma_btc, 4), " * x"))
+```
+
+# Comparación Numérica: Euler vs. Milstein
+
+```{r comparacion_grafica}
+# 5. Comparación Euler vs Milstein
+set.seed(31415)
+N_pasos <- 365
+T_ano   <- 1.0
+
+# NOTA: method debe ir en minúsculas ("euler" y "milstein")
+btc_euler <- sde.sim(
+  X0 = S0, drift = f_drift, sigma = f_sigma, 
+  N = N_pasos, T = T_ano, method = "euler"
+)
+
+set.seed(31415) # Mismas sacudidas pa comparar bien
+btc_milstein <- sde.sim(
+  X0 = S0, drift = f_drift, sigma = f_sigma, 
+  N = N_pasos, T = T_ano, method = "milstein"
+)
+
+# Gráfica 1: Comparación de algoritmos
+plot(
+  as.numeric(btc_euler), type = "l", col = "blue", lwd = 2,
+  main = "Proyección BTC: Euler vs Milstein (Mismo ruido)",
+  xlab = "Días Futuros", ylab = "Precio (USD)"
+)
+lines(as.numeric(btc_milstein), col = "red", lwd = 2, lty = 2)
+legend("topleft", legend = c("Euler", "Milstein (con corrección)"),
+       col = c("blue", "red"), lty = 1:2, lwd = 2)
+```
+
+# Simulación de Escenarios Futuros (Monte Carlo)
+
+```{r dispersion_grafica}
+# Gráfica 2: Varias trayectorias para ver la dispersión
+set.seed(123)
+colores <- rainbow(10)
+
+plot(
+  1:N_pasos, rep(S0, N_pasos), type = "n",
+  ylim = c(S0 * 0.3, S0 * 3), # Escala grande por la volatilidad
+  main = "10 Escenarios Posibles para BTC a 1 año",
+  xlab = "Días Futuros", ylab = "Precio (USD)"
+)
+abline(h = S0, col = "black", lty = 2, lwd = 1.5) # precio de hoy
+
+for (i in 1:10) {
+  trayectoria <- sde.sim(
+    X0 = S0, drift = f_drift, sigma = f_sigma, 
+    N = N_pasos, T = T_ano, method = "milstein"
+  )
+  lines(as.numeric(trayectoria), col = colores[i], lwd = 1.5)
+}
+```

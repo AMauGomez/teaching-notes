@@ -1,0 +1,72 @@
+---
+title: "Stepwise"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-10-30"
+output: pdf_document
+---
+
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(GGally)
+library(ggplot2)
+```
+
+Cargamos los datos
+
+```{r}
+datos<-read.csv("datos/Real estate.csv")
+datos<-datos[,-1]
+```
+
+Nuestro objetivo es crear un modelo de predicción del precio de una casa dadas sus caracteristicas. 
+
+Revisaremos brevemente los métodos forward, backward y stepwise
+
+Creamos nuestros modelo nulo (con solo la pendiente) y el modelo completo (con todas las variables explicativas).
+
+```{r}
+lm_vacio<-lm(Y.house.price.of.unit.area~1, datos)
+summary(lm_vacio)
+```
+
+
+```{r}
+lm_completo<-lm(Y.house.price.of.unit.area ~., datos)
+summary(lm_completo)
+```
+
+
+```{r}
+lxt<-lm(Y.house.price.of.unit.area ~ X3.distance.to.the.nearest.MRT.station + 
+    X4.number.of.convenience.stores + X2.house.age + X5.latitude + 
+    X1.transaction.date, datos)
+summary(lxt)
+```
+
+
+
+### Forward
+
+Explicación en clase de su funcionamiento*
+
+```{r}
+lm_forward<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "forward")
+summary(lm_forward)
+```
+
+
+### Backward
+
+```{r}
+lm_backward<-step(lm_completo, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "backward")
+summary(lm_backward)
+```
+
+### Stepwise
+
+```{r}
+lm_stepwise<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "both")
+summary(lm_stepwise)
+```
+

@@ -1,0 +1,70 @@
+---
+title: "Friedman, Rho de Spearman y Tau de Kendall"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-08-26"
+output: pdf_document
+---
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(GGally)
+library(ggplot2)
+```
+
+Simulamos una muestra de calificaciones de 7 personas sobre el performance de un perfume en diferentes horas del día.
+
+```{r}
+Calificación<- c(8,9,6,7,9,7,8,7,6,9,8,8,10,7,9,10,9,8,9,9,10 )
+hora <- factor( rep( c( "mañana", "tarde", "noche" ), 7 ) )
+sujeto <- factor( rep( 1:7, each = 3 ) )
+datos <- data.frame( Calificación, hora, sujeto )
+```
+
+Observamos los datos (son valores ordinales por lo cual tenemos idea que test usar)
+
+```{r}
+datos
+```
+Realizamos un test de Friedman
+```{r}
+friedman.test(Calificación, hora, sujeto)
+```
+Por lo tanto no hay diferencias entre los grupos
+
+
+### Tau de Kendall
+Cargamos los datos
+
+```{r}
+datos<-read_xlsx("datos/wine.xlsx")
+datos$Class<-factor(datos$Class)
+```
+
+
+```{r}
+vinedo_1.1<-subset(datos, datos$Class==1.1)
+vinedo_1.2<-subset(datos, datos$Class==1.2)
+vinedo_1<- merge(x = vinedo_1.1, y = vinedo_1.2, all = TRUE)
+vinedo_2<-subset(datos, datos$Class==2)
+vinedo_3<-subset(datos, datos$Class==3)
+```
+
+Deseamos saber el nivel de correlación entre las variables Magnesio  Y Prolina para el viñedo 2, usamos la T de Kendall (explicación en clase)
+
+```{r}
+tau<-cor.test(vinedo_2$Magnesium, vinedo_2$Proline,  method="kendall")
+tau
+
+```
+
+### Rho de Spearman
+Explicación en clase
+
+```{r}
+rho<-cor.test(vinedo_2$Magnesium, vinedo_2$Proline,  method="spearman")
+rho
+```
+
+
+
+

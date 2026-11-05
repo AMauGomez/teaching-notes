@@ -1,0 +1,177 @@
+---
+title: "Análisis de Correspondencias"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-10-15"
+output: pdf_document
+---
+
+```{r, include=FALSE, message=FALSE}
+library(ca)
+library(FactoMineR)#
+library(factoextra)#
+library(dplyr)
+library(cabootcrs)#tablas contingencia
+```
+
+Cargamos los datos y los preparamos para la analisis
+
+```{r}
+datos<-read.csv("datos/Niveles de Obesidad.csv")
+datos<-datos%>%mutate(datos, Height=Height*100)
+```
+
+quitamos los datos faltantes
+
+```{r}
+datos<-na.omit(datos)
+```
+
+ya que deseamos hacer un análisis de correspondencias necesitamos convertir las variables cuantitativas a factores, por lo cual haremos nuevos grupos o niveles
+
+```{r}
+datos$Age_fac <- cut(datos$Age,
+                    breaks = c(0, 18, 30, 40, 50, 60, 100),
+                    labels = c('0-18', '19-30', '31-40', '41-50', '51-60', '60+'),
+                    include.lowest = TRUE)
+
+datos$Height_fac<- cut(datos$Height,
+                             breaks = c(145, 160, 170, 180, 190, 200), 
+                             labels = c("145-160", "160-170", "170-180", "180-190", "190-200"),
+                             include.lowest = TRUE)
+
+datos$Weight_fac <- cut(datos$Weight,
+                             breaks = c(39, 60, 80, 100, 120, 166),
+                             labels = c("39-60", "60-80", "80-100", "100-120", "120-166"),
+                             include.lowest = TRUE)
+
+# Creamos 3 niveles: bajo, medio y alto de la frecuencia en consumo de vegetales
+datos$FCVC_fac <- cut(datos$FCVC,
+                      breaks = c(0, 1, 2, 3), 
+                      labels = c('Bajo', 'Medio', 'Alto'),
+                      include.lowest = TRUE)
+
+datos$NCP_fac <- cut(datos$NCP,
+                          breaks = c(0, 1, 3, 4),
+                          labels = c('Bajo', 'Medio', 'Alto'),
+                          include.lowest = TRUE)
+
+# Creamos 3 niveles: bajo, medio y alto de cosnumo de agua
+datos$CH2O_fac <- cut(datos$CH2O,
+                           breaks = c(0, 1.5, 2.5, 3), 
+                           labels = c('Bajo', 'Medio', 'Alto'),
+                           include.lowest = TRUE)
+
+# Creamos 3 niveles: bajo, medio y alto de la frecuencia con la que hacen actividad física.
+datos$FAF_fac <- cut(datos$FAF,
+                          breaks = c(0, 0.5, 1.5, 3), 
+                          labels = c('Low', 'Medium', 'High'),
+                          include.lowest = TRUE)
+# Creamos 3 niveles: bajo, medio y alto del tiempo promedio de uso de aparatos moviles 
+datos$TUE_fac <- cut(datos$TUE,
+                          breaks = c(0, 0.5, 1.5, 2), 
+                          labels = c('Low', 'Medium', 'High'),
+                          include.lowest = TRUE)
+```
+
+
+Realizamos la selección de variables con las que haremos el modelo, quitamos las que ya no nos sirven ya que no son niveles o categorias
+
+```{r}
+datos_1 <-datos %>% dplyr::select(-Age, -Height, -Weight, -FCVC, -NCP, -CH2O, -FAF, -TUE)
+
+```
+
+de esta forma obtenemos puras variables medidas en categorias o niveles, ya que nuestro objetivo es encontrar relaciones de estas variables con el nivel de obesidad de las personas haremos una selección de variables que nos ayuden en el análisis
+
+```{r}
+datos_modelo <- subset(datos_1, select = c(Gender, FAVC, SCC, NObeyesdad, FAF_fac))
+datos_modelo_1 <- subset(datos_1, select = c(Gender, FAVC, SCC, NObeyesdad, FAF_fac, CAEC))
+tabla_contingencia<- table(datos_1$Gender, datos_1$FAVC, datos_1$SCC, datos_1$NObeyesdad, datos_1$FAF_fac)
+```
+
+Creamos una matriz de contingencia para observar la relación entre los datos y las categorias
+
+```{r}
+matriz_cont<-getBurt(datos_modelo)
+head(matriz_cont)
+```
+
+```{r}
+modelo_MCA<-MCA(datos_modelo, ncp=5, graph = FALSE)
+modelo_MCA_1<-MCA(datos_modelo, ncp=5, graph = FALSE)
+```
+## Interpretación de los datos ##
+
+Primero revisamos los valores propios obtenidos en el modelo, en este modelo usamos la razon $\lambda=1/colunmas-1$ y seleccionamos los valores propios mayores a este número, ademas nos apoyamos del screeplot y la varianza acumulada, en este caso $\lambda=1/4=.25$
+
+
+```{r}
+modelo_MCA$eig
+```
+```{r}
+scree_plot<-fviz_screeplot(modelo_MCA, addlabels = TRUE, ylim = c(0, 20))
+scree_plot
+```
+
+```{r}
+modelo_MCA_1$eig
+```
+Aqui $\lambda=20$
+```{r}
+scree_plot_1<-fviz_screeplot(modelo_MCA_1, addlabels = TRUE, ylim = c(0, 20))
+scree_plot_1
+```
+
+Evaluamos el impacto de cada categoria en un biplot usando como medida de correlación el coseno cuadradro, entre más cercano a 1 más influye esa categoria en esa componente
+
+```{r}
+round(modelo_MCA$var$cos2,3)
+```
+```{r}
+round(modelo_MCA_1$var$cos2,3)
+```
+
+Visualizamos las categorias para el modelo 1
+
+```{r}
+fviz_mca_var(modelo_MCA, col.var = "cos2",
+             gradient.cols = c("green", "orange", "purple", "red"), 
+             repel = TRUE, 
+             ggtheme = theme_minimal())
+```
+el modelo 2
+
+```{r}
+fviz_mca_var(modelo_MCA_1, col.var = "cos2",
+             gradient.cols = c("green", "orange", "purple", "red"), 
+             repel = TRUE, 
+             ggtheme = theme_minimal())
+```
+Podemos ver las contribuciones de forma gráfica
+```{r}
+fviz_contrib(modelo_MCA, choice = "var", axes = 1, top = 15)
+fviz_contrib(modelo_MCA, choice = "var", axes = 2, top = 15)
+```
+
+
+Contribución individual
+"green", "orange", "purple", "red"
+
+```{r}
+fviz_mca_ind(modelo_MCA, col.ind = "cos2", 
+             gradient.cols = c("green", "orange", "purple", "red"),
+             repel = FALSE, 
+             ggtheme = theme_minimal())
+```
+
+
+
+
+
+
+
+
+
+
+
+

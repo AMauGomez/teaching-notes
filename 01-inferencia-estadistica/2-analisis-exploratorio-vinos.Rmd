@@ -1,0 +1,126 @@
+---
+title: "Pruebas T de Student Viñedos"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-08-03"
+output: pdf_document
+---
+
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(GGally)
+library(ggplot2)
+```
+
+
+El archivo wine contiene trece variables númericas derivadas de un análisis químico en vinos de Italia de tres viñedos diferentes, en el viñedo 1 se utilzaron 2 tipos de uva (verde y morada), en el viñedo 2 se utilizo uva verde y en el viñedo 3 se utilizo uva morada, realice un analisis estadístico para saber si existen diferencias en las variables "Alcohol" y "Proanthocyanins"  para el viñedo 1.
+Para los viñedos 2 y 3 revise las variables "Alcohol", "Ash", "Magnesium".
+
+
+Primero cargamos nuestra base de datos
+```{r}
+datos<-read_xlsx("datos/wine.xlsx")
+datos$Class<-factor(datos$Class)
+```
+
+
+```{r}
+str(datos)
+```
+
+Creamos subconjuntos dependiendo del viñedo de procedencia
+
+```{r}
+vinedo_1.1<-subset(datos, datos$Class==1.1)
+vinedo_1.2<-subset(datos, datos$Class==1.2)
+vinedo_1<- merge(x = vinedo_1.1, y = vinedo_1.2, all = TRUE)
+vinedo_2<-subset(datos, datos$Class==2)
+vinedo_3<-subset(datos, datos$Class==3)
+```
+
+## Viñedo 1 ##
+
+Primero analizaremos el viñedo 1, para el cual se hizo un muestreo de 25 vinos para cada tipo de uva, visualizaremos los datos 
+
+```{r}
+variables<-colnames(vinedo_1)
+variables_1<-variables[c(2,4,6,10,14)]
+ggpairs(vinedo_1,columns=variables_1,aes(color=Class,alpha=0.5),
+        upper= list(continuous= wrap("cor",size=2.5)))
+```
+
+Ya que queremos contrastar la hipotesis de que las medias en Alcohol y Proanthocyanins no difieren del promedio del viñedo 1, haremos una prueba t de student usando como mu= el promedio para todo el viñedo 1
+
+```{r}
+mu_1.A<-mean(vinedo_1$Alcohol)
+mu_1.P<-mean(vinedo_1$Proanthocyanins)
+mu_1.A
+mu_1.P
+```
+Para la variable Alcohol y la uva verde
+
+```{r}
+t_1.1_A<-t.test(vinedo_1.1$Alcohol, mu=mu_1.A)
+t_1.1_A
+```
+
+Para variable alcohol y uva morada
+
+```{r}
+t_1.2_A<- t.test(vinedo_1.2$Alcohol, mu=mu_1.A)
+t_1.2_A
+```
+
+Para la variable Proanthocyanins y la uva verde
+
+```{r}
+t_1.1_P<-t.test(vinedo_1.1$Proanthocyanins, mu=mu_1.P)
+t_1.1_P
+```
+
+Para la variable Proanthocyanins y la uva morada 
+
+```{r}
+t_1.2_P<-t.test(vinedo_1.2$Proanthocyanins, mu=mu_1.P)
+t_1.2_P
+```
+
+
+# Pruebas T de Welch #
+
+## Viñedo 2 y 3 ##
+
+Bajo los supuestos de que las muestra vienen de Distribuciones Normales indepedientes, la varianza entre las variables a estudiar son distintas para los dos viñedo y  el tamaño de las muestras es diferente entonces podemos realizar una prueba de medias T de Welch para saber si existe una diferencia significativa entre la media de las variables a estudiar.
+
+Unimos el viñedo 2 y 3
+```{r}
+vinedo_2_3<-merge(vinedo_2, vinedo_3, all = TRUE)
+```
+ isulaizamos los datos
+```{r}
+ggpairs(vinedo_2_3,columns=variables_1,aes(color=Class,alpha=0.5),
+        upper= list(continuous= wrap("cor",size=2.5)))
+```
+
+Realizamos el test para alcohol
+
+```{r}
+t.test(Alcohol~Class, vinedo_2_3)
+```
+
+Realizamos el test para Ash
+```{r}
+t.test(Ash~Class, vinedo_2_3)
+```
+Realizamos el test para Magnesium
+```{r}
+t.test(Magnesium~Class, vinedo_2_3, conf.level = 0.90)
+```
+
+
+```{r}
+t.test(Magnesium~Class, vinedo_2_3)
+```
+
+
+

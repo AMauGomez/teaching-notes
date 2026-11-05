@@ -1,0 +1,67 @@
+---
+title: "Regresión Lineal Múltiple"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-08-22"
+output: pdf_document
+---
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(GGally)
+library(ggplot2)
+```
+
+Cargamos los datos
+```{r}
+datos<-read.csv("datos/CarPrice_Assignment.csv")
+```
+
+Nuestro objetivo es crear un modelo de predicción del precio de un auto dadas sus caracteristicas. 
+
+Revisaremos brevemente los métodos forward, backward y stepwise
+
+Creamos nuestros modelo nulo (con solo la pendiente) y el modelo completo (con todas las variables explicativas).
+
+```{r}
+lm_vacio<-lm(price~1, datos)
+summary(lm_vacio)
+```
+
+
+```{r}
+lm_completo<-lm(price~, datos)
+summary(lm_completo)
+```
+
+
+
+```{r}
+LM_CLASE<-lm(price~datos$doornumber+ datos$carlength+ datos$aspiration+ datos$curbweight+datos$cylindernumber+datos$horsepower, data=datos)
+summary(LM_CLASE)
+```
+
+### Forward
+
+Explicación en clase de su funcionamiento*
+
+```{r}
+lm_forward<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "forward")
+summary(lm_forward)
+```
+
+
+
+### Backward
+
+```{r}
+lm_backward<-step(lm_completo, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "backward")
+summary(lm_backward)
+```
+
+### Stepwise
+
+```{r}
+lm_stepwise<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "both")
+summary(lm_stepwise)
+```
+

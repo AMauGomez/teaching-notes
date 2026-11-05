@@ -1,0 +1,83 @@
+---
+title: "Procesamiento de bases para regresión"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-11-11"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+```
+
+```{r}
+datos<-read.csv("datos/insurance.csv")
+```
+
+
+```{r}
+datos<-datos %>% mutate(sexo_0_1=ifelse(datos$sex=='male', 1,0))
+
+datos<- datos %>% mutate(sexo_factor=as.factor(sexo_0_1))
+```
+
+
+```{r}
+función_1<-function(x){
+  if(x=='southwest'){0
+  } else {
+  if(x=='northwest'){1
+    
+  } else{
+  if(x=='northeast'){2
+    
+  } else{
+    3
+  }
+  } 
+  }
+}
+```
+
+
+```{r}
+region<-datos$region
+region<-as.vector(region)
+```
+
+```{r}
+region_0_3<-lapply(region, función_1)
+region_0_3<-unlist(region_0_3)
+```
+
+```{r}
+region_0_3<-as.vector(region_0_3)
+datos<-cbind(datos, region_0_3)
+```
+
+
+```{r}
+datos<-datos %>% mutate(smoker_1_0=ifelse(datos$smoker=='yes',1,0))
+```
+
+
+
+```{r}
+datos_1<-datos %>% select(c(age, sexo_0_1, bmi, children, region_0_3, charges, smoker_1_0))
+```
+
+```{r}
+datos_2<-datos %>%  select(c(age, sex, bmi, children, region, charges, smoker))
+```
+
+
+```{r}
+write.csv(datos_1, "datos/seguros_1.csv")
+```
+
+```{r}
+write.csv(datos_2, "datos/seguros_2.csv")
+```
+
+

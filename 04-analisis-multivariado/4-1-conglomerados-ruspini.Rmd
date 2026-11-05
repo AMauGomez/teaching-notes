@@ -1,0 +1,208 @@
+---
+title: "Ruspini Clusters"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-09-05"
+output: pdf_document
+---
+
+Cargamos las librerias y los datos
+```{r}
+library("mclust")
+library("datasets")
+library("cluster")
+library("ggplot2")
+library("tidyverse")
+library("cluster")
+library("factoextra")
+library("fpc") #rand
+
+```
+
+Los datos
+
+```{r}
+data(ruspini)
+datos<-ruspini
+```
+
+
+```{r}
+plot(datos)
+```
+
+Creamos algunos modelos jerarquicos, usaremos los metodos de average y single
+
+```{r}
+d<-dist(datos)
+```
+
+
+```{r}
+ave<-hclust(d, method = "average")
+com<-hclust(d, method = "complete")
+ward<-hclust(d, method = "ward.D")
+```
+
+Visualizamos el dendograma
+```{r}
+fviz_dend(ave, cex = 0.5)
+```
+
+
+Revusaremos la correlación entre las distancias cofenéticas y las distancias de los datos originales generados por la función dist(), para evaluar s i las distancias (es decir, las alturas) en el árbol reflejan las distancias originales con precisión.
+
+```{r}
+cofo_ave<- cophenetic(ave)
+cor(d, cofo_ave)
+```
+
+
+```{r}
+cofo_com<-cophenetic(com)
+cor(d, cofo_com)
+```
+
+```{r}
+cofo_ward<-cophenetic(ward)
+cor(d, cofo_ward)
+```
+
+¿Cortamos el arbol en cuantos grupos?
+```{r}
+grp_ave<-cutree(ave, k=4)
+grp_ave<-as.vector(grp_ave)
+```
+
+
+
+Número de elementos en cada grupo:
+```{r}
+table(grp_ave)
+```
+
+Hacemos el dendo y lo cortamos en k grupos
+
+```{r}
+datos_ave<-cbind(datos, grp_ave)
+head(datos_ave)
+```
+
+
+```{r}
+plot_1<-ggplot(datos_ave, aes(x=x,y=y, color=as.factor(grp_ave))) +geom_point()
+plot_1
+```
+
+
+### Evaluación de modelo
+
+¿Como sabemos si estan bien clasificados?
+
+Podemos usar la estadística de Hopkins, donde esperamos un valor cercano a 1 ya que la hipotesis nula es que los datos es que no hay grupos, y la alternativa es que sí hay tendencia a agruparse en los datos, como referencia esperamos un valor mayor a .5
+
+```{r}
+res <- get_clust_tendency(datos, n = nrow(datos)-1, graph = FALSE)
+res$hopkins_stat
+```
+
+Por lo tanto el conjunto de datos tiende a agruparse de manera moderada
+
+¿Como sabemos si las asignaciones a los grupos es correcta, es decir, como evaluo que los datos deben pertencer a ese grupo?
+
+Podemos utilizar la grafica de siluetas, el análisis de siluetas mide el grado de agrupación de una observación y estima la distancia media entre clusters. El gráfico de siluetas muestra una medida de la proximidad de cada punto de un clúster a los puntos de los clústeres vecinos.
+
+
+Aqui haremos uso de otra libreria la cual se muestra a continuación, para poder graficafr el analisis de siluetas 
+
+Analisis de Cluster con la funcion eclust:
+eclust(x, FUNcluster = "kmeans", hc_metric = "euclidean", ...)
+x: matriz o data frame.
+
+FUNcluster:“kmeans”, “pam”, “clara”, “fanny”, “hclust”, 
+              “agnes” o “diana”.
+              
+hc_metric: Cuando seleccionamos “hclust”, “agnes” o “diana”.
+             Podemos elegir: “euclidean”, “manhattan”, “maximum”, 
+“canberra”, “binary”, “minkowski”, “pearson”, “spearman” o “kendall”.
+
+
+k: número de clusters.
+
+hc_method: metodo de agrupación (complete, single, average, ...).
+
+
+Como podemos ver es compatible con el objeto hclust que es con el que estabamos trabjando
+solo lo redifinimos al objeto que nos permite graficar siluetas
+
+
+```{r}
+hc.ave <- eclust(datos, "hclust", k = 5, hc_metric = "euclidean", 
+                 hc_method = "average", graph = TRUE)
+```
+
+
+Lo graficamos
+
+```{r}
+fviz_dend(hc.ave, show_labels = FALSE,
+          palette = "jco", as.ggplot = TRUE)
+```
+
+
+
+```{r}
+fviz_silhouette(hc.ave, palette = "jco",
+                ggtheme = theme_classic())
+```
+En esta gráfica queremos que los valores sean cercano a 1, en caso que haya valores negativos nos indica que no se esta clasificando bien ese objeto en ese cluster
+
+```{r}
+silinfo <- hc.ave$silinfo
+names(silinfo)
+```
+
+
+Podemos identificar la observación que tiene una medida cercana a 0, en este caso es la observción 45, nos dice que esta en el cluster 3 y que el cluster más proximo (en el que mejor quedaría clasificado es en el 4) podemos cambiar su asignación manualmente
+
+Anchura de la silueta de cada observación
+
+```{r}
+silinfo$widths
+```
+
+Anchura media de la silueta de cada cluster (queremos que sea cercana a 1)
+```{r}
+silinfo$clus.avg.widths
+```
+
+Tambien podemos analizar la media total (media de todas las anchuras de silueta individuales)
+```{r}
+silinfo$avg.width
+```
+
+Finalmente el tamaño de cada cluster
+
+```{r}
+hc.ave$size
+```
+
+
+### Conglomerados difusos (Fuzzy Clustering)
+
+El clustering difuso se considera un método de  clustering suave, en el que cada
+elemento tiene una probabilidad de pertenecer a cierto cluster. Es decir cada elemento tiene un conjunto de coeficientes de pertenencia que corresponden al grado de estar en un clúster determinado.
+
+Usaremos las función Fany que viene en la libreria cluster que tiene la siguiente sintaxis
+fanny(x, k, metric = "euclidean", stand = FALSE)
+
+```{r}
+fan_1<-fanny(datos, k=5, metric = "euclidean")
+fan_1
+```
+
+
+
+```{r}
+plot(fan_1)
+```
+

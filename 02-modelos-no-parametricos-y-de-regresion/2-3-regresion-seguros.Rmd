@@ -1,0 +1,53 @@
+---
+title: "Aseguradora"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-10-14"
+output: pdf_document
+---
+
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(GGally)
+library(ggplot2)
+library(car)
+```
+
+
+Cargamos los datos
+
+```{r}
+datos<-read.csv("datos/insurance.csv")
+```
+
+```{r}
+datos_1<-datos[,1:3]
+datos_2<-datos[,3:7]
+```
+
+
+
+```{r}
+ggpairs(datos_1,aes(color=sex,alpha=0.5),
+        upper= list(continuous= wrap("cor",size=2.5)))
+```
+
+```{r}
+ggpairs(datos_2,aes(color=region,alpha=0.5),
+        upper= list(continuous= wrap("cor",size=2.5)))
+```
+
+```{r}
+summary(datos)
+```
+
+
+```{r}
+reg_1<-lm(weight~sex+age+bmi, data=datos)
+```
+
+
+```{r}
+reg_2<-lm(charges~smoke+children)
+```
+

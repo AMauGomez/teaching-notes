@@ -1,0 +1,138 @@
+---
+title: "Simulación del Movimiento Browniano: Complejidad y Variaciones"
+author: "Ayudantía de Procesos Estocásticos"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    number_sections: true
+geometry: margin=2cm
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center',
+  fig.width = 6.5,
+  fig.height = 3.8
+)
+```
+
+# Comparación de Complejidad Computacional: $O(n)$ vs $O(n^3)$
+
+Se evalúa el rendimiento temporal entre la simulación estándar vectorizada (suma acumulada de incrementos independientes) y el enfoque multivariado mediante factorización de Cholesky.
+
+```{r benchmarks}
+library(ggplot2)
+library(dplyr)
+
+# Simulación Óptima O(n) usando incrementos independientes
+SimularBrowniano_Cumsum <- function(t, n) {
+  deltaT <- t / n
+  Z <- rnorm(n)
+  # Suma acumulada de los incrementos gaussianos (O(n))
+  Bt <- c(0, cumsum(sqrt(deltaT) * Z))
+  return(Bt)
+}
+
+# Simulación O(n^3) usando Normal Multivariada
+SimularBrowniano_Cholesky <- function(t, n) {
+  tiempos <- seq(t / n, t, length.out = n)
+  
+  # Matriz de covarianzas Sigma_ij = min(t_i, t_j)
+  Sigma <- outer(tiempos, tiempos, pmin)
+  
+  # Descomposición de Cholesky (O(n^3))
+  L <- t(chol(Sigma))
+  
+  # Transformación del vector normal estándar
+  Z <- rnorm(n)
+  Bt <- c(0, L %*% Z)
+  
+  return(Bt)
+}
+
+# Comparación empírica de tiempos de ejecución
+cat("Iniciando prueba de rendimiento computacional...\n")
+n_prueba <- c(500, 1000, 2000, 4000)
+
+for (n in n_prueba) {
+  cat("\nSimulando n =", n, "puntos...\n")
+  
+  # Tiempo de Suma Acumulada O(n)
+  t_cumsum <- system.time(SimularBrowniano_Cumsum(1, n))["elapsed"]
+  
+  # Tiempo de Cholesky O(n^3)
+  t_chol <- system.time(SimularBrowniano_Cholesky(1, n))["elapsed"]
+  
+  cat("-> Método lineal (Cumsum):", t_cumsum, "segundos\n")
+  cat("-> Método Cholesky (O(n^3)):", t_chol, "segundos\n")
+}
+cat("\nCONCLUSIÓN: Al duplicar 'n', Cholesky multiplica su tiempo casi por 8 (2^3).\n")
+```
+
+\newpage
+
+# Variación Total vs. Variación Cuadrática
+
+Se analiza una trayectoria fina fija sobre el intervalo $[0, 10]$ muestreada a través de particiones anidadas de tamaño $n = 2^2, \dots, 2^{11}$ para contrastar la divergencia de la variación total frente a la convergencia determinista de la variación cuadrática.
+
+```{r variaciones, fig.show='hold'}
+set.seed(31415)
+t_max <- 10
+n_particiones <- 2^(2:11)
+
+# Simulación de la trayectoria de máxima resolución
+Bt_fino <- SimularBrowniano_Cumsum(t_max, max(n_particiones))
+
+VarTotal <- numeric(length(n_particiones))
+VarCuadratica <- numeric(length(n_particiones))
+
+for (i in 1:length(n_particiones)) {
+  # Extraer los índices para la partición anidada
+  step <- max(n_particiones) / n_particiones[i]
+  ind <- seq(1, max(n_particiones) + 1, by = step)
+  
+  # Calcular incrementos de la trayectoria
+  dB <- diff(Bt_fino[ind])
+  
+  # Variación Total (Suma de valores absolutos)
+  VarTotal[i] <- sum(abs(dB))
+  
+  # Variación Cuadrática (Suma de cuadrados)
+  VarCuadratica[i] <- sum(dB^2)
+}
+
+df_variaciones <- data.frame(
+  n = n_particiones, 
+  Total = VarTotal, 
+  Cuadratica = VarCuadratica
+)
+
+# Gráfica 1: Variación Total (diverge a infinito)
+plot_TV <- ggplot(df_variaciones, aes(x = n, y = Total)) +
+  geom_line(color = "red") + 
+  geom_point() +
+  theme_minimal() +
+  labs(
+    title = "Variación Total (Divergencia)",
+    x = "n (Tamaño de la partición)", 
+    y = "Variación Total"
+  )
+
+# Gráfica 2: Variación Cuadrática (converge a t)
+plot_QV <- ggplot(df_variaciones, aes(x = n, y = Cuadratica)) +
+  geom_line(color = "blue") + 
+  geom_point() +
+  geom_hline(yintercept = t_max, linetype = 'dashed') +
+  theme_minimal() +
+  labs(
+    title = "Variación Cuadrática (Convergencia a t = 10)",
+    x = "n (Tamaño de la partición)", 
+    y = "Variación Cuadrática"
+  )
+
+print(plot_TV)
+print(plot_QV)
+```

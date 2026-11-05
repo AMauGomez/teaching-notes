@@ -1,0 +1,390 @@
+---
+title: "Análisis Estadístico de datos vinícolas"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2023-02-23"
+output: pdf_document
+---
+El archivo wine contiene trece variables númericas derivadas de un análisis químico en vinos de Italia de tres viñedos diferentes, realizaremos un análisis estadístico de las muestras para encontrar relaciones o diferencias entre los viñedos.
+
+```{r, message=FALSE, include=FALSE} 
+library(corrplot)
+library(readxl)
+library(dplyr)
+library(lmtest)
+library(ggplot2)
+library(corrplot)
+library(GGally)
+library(TeachingDemos)
+library(pracma)
+library(ggpubr)
+library(tidyverse)
+library(psych)
+library(gridExtra)
+```
+
+
+Cargamos la base de datos que analizaremos
+
+
+```{r}
+base = read_excel("datos/wine.xlsx")
+datos= data.frame(base)
+head(datos)
+```
+
+```{r, include=F}
+vinedo_1<-subset(datos, datos$Class==1)
+vinedo_2<-subset(datos, datos$Class==2)
+vinedo_3<-subset(datos, datos$Class==3)
+```
+
+
+
+Gráficamos para identificar la distribución de los datos y analizar si existe relación entre las variables
+
+```{r, message=FALSE, include=FALSE}
+datos$Class<-as.character(datos$Class)
+```
+
+En la siguiente gráfica podemos observar que los viñedos tienen diferencias en la variable alcohol, sin embargo, las diferencias no son significativas, en contraparte para la variable ácido malico el viñedo 1 tiene mediciones más altas en compración a los otros viñedos, en las variables restantes se mantienen en en rango los datos obtenidos para los viñedos.
+
+```{r, fig.width=8, fig.height=5}
+ggpairs(datos, columns = 2:5, aes(color = Class, alpha = 0.5),
+        upper = list(continuous = wrap("cor", size = 2.5))) 
+
+```
+
+
+
+```{r, fig.width=8, fig.height=5}
+ggpairs(datos, columns = 6:9, aes(color = Class, alpha = 0.5),
+        upper = list(continuous = wrap("cor", size = 2.5)))
+```
+
+
+En general en esta gráfica no hay diferencias significativas, solamente se distingue que para el total de fenoles y flavonoides las distribuciones de los datos tienen medias distintas.
+
+```{r, fig.width=8, fig.height=5}
+ggpairs(datos, columns = 10:14, aes(color = Class, alpha = 0.5),
+        upper = list(continuous = wrap("cor", size = 2.5)))
+```
+
+Finalmente para la tercer visualización no notamos diferencias importantes.
+
+A continuación realizaremos un análisis númerico de los datos, para esto utilizaremos un resumen de estadísticas básicas.
+
+
+```{r}
+describeBy(datos, group=datos$Class, fast=TRUE)
+```
+
+
+Notamos que hay 13 variables de 3 diferentes clases, cada clase pertenece a un viñedo distinto, encontramos variables como la cantidad de alcohol, acido malico, ceniza, alcalinidad, magnesio, total de fenol, flavonoides, no flavonoides, 
+proantocianidinas, intesidad, matiz, oxigeno disuelto, prolina.
+
+
+Al analizar las estadisticas podemos hacer algunas observaciones, al comparar el nivel de alcohol promedio, **notamos que en el segundo viñedo el alcohol es menor en promedio con un 12.28 comparado al 13.74 y 13.15 del viñedo 1 y 3**, tambien al comparar la **alcalinidad el viñedo 1 es menor con un 17.04 contra un 20.24 y 21.42 del viñedo 2 y 3,** el **magnesio en promedio es menor en el viñedo 2 con un 94 en promedio versus un 106 y 99.31** del viñedo 1 y 3, tambien el nivel de **intensidad en el viñedo 2 es menor con un 3.08 contra un 5.4 y 7.39**, para el **viñedo 3 encontramos que los flavonoides son menores con un .78 en comparación a un 2.98 y 2.08**, al analizar la **prolina notamos que el viñedo 1 tiene niveles 2 veces mas altos que los otros viñedos, con un 1115.7 versus 519 y 629**, en las otras variables los indices se mantienen semejantes o con una varianza pequeña.
+
+# Análisis Unitario de los Viñedos #
+
+## Viñedo 1 ##
+
+Hacemos un correlograma para identificar que variables estan relacionadas
+```{r, fig.width=12, fig.height=8 , warning=FALSE}
+corrplot.mixed(cor(vinedo_1[2:14]))
+```
+
+Como podemos ver en los coeficientes de correlación, **la alcalinidad y la ceniza es de .55, lo cual nos indica una correlación postiva débil-moderada,** lo cual es logico ya que la alcalinidad se debe en parte a la ceniza contenida en el vino, tambien notamos una **relación positiva fuerte entre el total de fenoles y flavonoides de .80,** **el total de fenoles tambien se relaciona fuertemente con la intensidad de sabor con un coeficiente de correlación de .65**, **las proantocianidinas y los flavonoides se relacionan moderadamente con un .55**, tambien la **intensidad con la prolina se relacionan moderadamente con un .59**, la **intensidad con lo flavonoides tiene una correlación de .74**, es decir una relación moderada, tambien se observa una **relación negativa débil entre el ácido malico y el matiz -.42**, la **prolina y el ácido malico se relacionan negativamente con un -.37**.
+
+Para el siguiente análsis tomaremos como referencia a las variables en las que la correlación es mayor a .50 ya que esto nos indica una relación moderada, ya que los flavonoides estan relacionados de forma positiva con el total de fenoles y con la intensidad, y la intensidad esta relacionada con la prolina haremos una gresión lineal multiple para ver como describen las variables antes mencionadas a la intensidad
+
+
+
+```{r}
+intensidad_1<-lm(vinedo_1$Intensity ~ vinedo_1$Total_phenols
++ vinedo_1$Flavanoids + vinedo_1$Proline , data = datos)
+summary(intensidad_1)
+```
+
+
+Notamos que aunque el total de fenoles y los flavonoides estan altamente relacionados al momento de hacer el modelo de regresión, el total de fenoles no es signifcativo en la explicación de los flavonoides, por esta razón quitaremos esta variable del modelo.
+
+Realizando un nuevo modelo
+
+```{r}
+intensidad_1.1<-lm(vinedo_1$Intensity ~ vinedo_1$Flavanoids 
+ + vinedo_1$Proline , data = datos)
+summary(intensidad_1.1)
+```
+
+
+Notamos que aunque eliminamos la variable de total de fenoles, el modelo no difiere en la R cuadrada ajustada  con el modelo que sí contiene a la variable total de fenoles ya que obtenemos que el nuevo  modelo explica el 64% de variabilidad dados los regresores, además en este modelo todos los regresores son significativos con un $\alpha=0.05$ y en conjunto las variables son significativas basandonos en la prueba F.
+
+### Intervalos de confianza para los estimadores ###
+
+Ahora daremos un intervalo de confianza para los estimadores de los regresores.
+
+```{r}
+confint(intensidad_1.1, level = 0.95)
+```
+
+## Verfifcación de Supuestos ##
+
+Ahora verificaremos los supuestos de linealidad, autocorrelación, homocedasticidad  y normalidad de residuales 
+
+
+### Linealidad ###
+
+Verficaremos este supuesto calculando la media de los residuos, queremos que este valor sea cercano a 0.
+
+```{r}
+intensidad_1.1$residuals
+```
+
+
+```{r}
+mean(intensidad_1.1$residuals)
+```
+
+De froma gráfica
+
+```{r, warnings=FALSE, tidy=FALSE, message=FALSE}
+plot_1<-ggplot(data = vinedo_1, aes(Flavanoids, intensidad_1.1$residuals))+ 
+  geom_point() + geom_smooth(color="red") +
+geom_hline(yintercept = 0)+
+  theme_bw()
+
+plot_2<-ggplot(data = vinedo_1, aes(Proline, intensidad_1.1$residuals))+ 
+  geom_point() + geom_smooth(color="cyan")+
+geom_hline(yintercept = 0)+
+  theme_bw()
+
+grid.arrange(plot_1, plot_2)
+```
+
+
+
+
+
+
+### Independecnia o No Autocorrelación ###
+
+Realizaremos un test Durbin-Watson donde la hipotesis nula sostiene que la autocorrelación es igual a cero
+
+```{r}
+dwtest(intensidad_1.1)
+```
+
+Con una significancia de $\alpha=0.05$ no se rechaza la hipotsis nula, por lo tanto podemos concluir que la autocorrelación es cero con un 95% de confianza, además que el valor del estadístico DW es cercano a 2 lo que indica que no hay autocorrelación.
+
+
+```{r, fig.width=8, fig.height=5}
+acf(intensidad_1.1$residuals, main="Supuesto de covarianza de residuales igual a cero")
+```
+
+Para verificar este supuesto haremos otra prueba Breusch-Godfrey, con hipotesis nula no existe autocorrelación 
+
+```{r}
+bgtest(intensidad_1.1)
+```
+
+Por lo tanto nomse rechaza la hipotesis nula, es decir no existe autocorrelación.
+
+### Homocedasticidad ###
+
+Para este supuesto haremos una prueba Breusch-Paga, con hipotesis nula se cumple la homocedasticidad.
+
+```{r}
+bptest(intensidad_1.1)
+```
+
+No se rechaza la hipotesis nula, por lo cual existe homocedasticidad.
+
+Graficamente podemos notar que no existe algún patron alrededor del cero, lo cual es buen indicativo que existe homocedasticidad.
+
+```{r, message=FALSE, fig.width=8, fig.height=5}
+ggplot(data = vinedo_1, aes(intensidad_1.1$fitted.values, intensidad_1.1$residuals)) +
+geom_point() + geom_smooth(color = "blue", se = TRUE) + geom_hline(yintercept = 0) +
+theme_bw()
+```
+
+
+
+
+### Normalidad de los residuales ###
+
+Realizando una prueba Shapiro-Wilks, con hipotesis nula la muestra se distribuye normal.
+
+```{r}
+shapiro.test(intensidad_1.1$residuals)
+```
+No se rechaza la hipotesis nula, existe normalidad.
+
+Gráficamente lo podemos observar en el siguiente qqplot
+
+
+
+```{r, fig.width=8, fig.height=5}
+qqnorm(intensidad_1.1$residuals)
+qqline(intensidad_1.1$residuals, col="blue")
+```
+Notamos que los datos se ajustan de buena forma a la linea.
+
+
+Por lo tanto podemos concluir que se cumplen los supuestos para nuestro modelo.
+
+## Viñedo 2 ##
+
+```{r, fig.width=12, fig.height=8 , warning=FALSE}
+corrplot.mixed(cor(vinedo_2[2:14]))
+```
+
+Al interpretar las graficas podemos notar que **existe una relación positiva entre la alcalinidad y la ceniza con .70** tambien los **flavonoides con el total de fenoles .77** existe una relación debil positiva entre **oxigeno diluido y el total de flavonoides con .48** y **oxigeno diluido y flavonoides con .58** tambien podemos observar una relación negatica moderada entre **los no flavonoides y total de fenoles con -.425** tambien notamos una relación entre **prolina y el magnesio con .50** y de la **proantocianidina y flavonoides con .50**
+
+
+
+Para este viñedo nos centraremos en el estudio de la ceniza y la alcalinidad, el total de fenoles y flavonoides, flavonoides y el oxígeno diluido, flavonoides y 
+proantocianidina.
+
+
+La variable flavonoides que es la que mayor relación moderada tiene con las otras variables, por lo cual haremos una regresión lineal
+
+```{r}
+flavonoides_2<-lm(vinedo_2$Flavanoids ~ vinedo_2$Total_phenols + vinedo_2$Proanthocyanins + vinedo_2$OD , data=vinedo_2)
+summary(flavonoides_2)
+```
+
+
+Podemos notar que todas las variables que incluimos en nuestro modelo son significativas, aunado a que la prueba F nos indica que los coeficientes de las variables no son 0, al realizar este modelo de regresión obtenemos que se explica el 67 % de la varianza de los flavonoides con los regresores que se incluyen en el modelo.
+
+### Intervalos de confianza para los estimadores ###
+
+Ahora encontraremos los intervalos de confianza para los estimadores de los coeficientes que obtuvimos con el modelo anterior con un nivel de confianza del 95%
+
+```{r}
+confint(flavonoides_2, level = 0.95)
+```
+
+Es importante notar que en nuestros intervalos no abarcan al 0, lo cual es congruente con las pruebas t individuales para cada coeficiente beta.
+
+## Verfifcación de Supuestos ##
+
+Verificando los supuestos que se deben cumplir para el  modelo de regresión
+
+
+### Linealidad ###
+
+
+```{r}
+mean(flavonoides_2$residuals)
+```
+
+De froma gráfica
+
+```{r, warnings=FALSE, message=FALSE, tidy=FALSE}
+plot_1<-ggplot(data = vinedo_2, aes(Total_phenols, flavonoides_2$residuals))+
+geom_point() + geom_smooth(color="red")+ geom_hline(yintercept = 0)+ theme_bw()
+
+plot_2<-ggplot(data = vinedo_2, aes(Proanthocyanins, flavonoides_2$residuals)) + 
+  geom_point() + geom_smooth(color="cyan") + geom_hline(yintercept = 0) + theme_bw()
+
+
+plot_3<-ggplot(data = vinedo_2, aes(OD, flavonoides_2$residuals)) + 
+  geom_point() + geom_smooth(color="cyan")+ geom_hline(yintercept = 0) + theme_bw()
+
+grid.arrange(plot_1, plot_2, plot_3)
+```
+
+
+
+### Independencia ###
+
+```{r}
+dwtest(flavonoides_2)
+```
+
+No existe autocorrelación.
+
+```{r, fig.width=8, fig.height=5}
+acf(flavonoides_2$residuals, main="Supuesto de covarianza de residuales igual a cero")
+```
+
+```{r}
+bgtest(flavonoides_2)
+```
+
+Por lo tanto nomse rechaza la hipotesis nula, es decir no existe autocorrelación.
+
+### Homocedasticidad ###
+
+
+```{r}
+bptest(flavonoides_2)
+```
+
+Existe homocedasticidad.
+
+
+```{r, fig.width=8, fig.height=5, message=FALSE, tidy=FALSE}
+ggplot(data = vinedo_2, aes(flavonoides_2$fitted.values, flavonoides_2$residuals)) + 
+  geom_point() + geom_smooth(color = "green", se = TRUE) + geom_hline(yintercept = 0) + 
+  theme_bw()
+```
+
+Notamos que los residuos se distribuyen aleatoriamente alrededor del cero.
+
+
+### Normalidad de los residuales ###
+
+```{r}
+shapiro.test(flavonoides_2$residuals)
+```
+
+
+```{r, fig.width=8, fig.height=5}
+qqnorm(flavonoides_2$residuals)
+qqline(flavonoides_2$residuals, col="green")
+```
+
+
+Existe Normalidad entre los residuales.
+
+
+
+## Viñedo 3 ##
+
+```{r, fig.width=12, fig.height=8 , warning=FALSE}
+corrplot.mixed(cor(vinedo_3[2:14]))
+```
+
+Encontramos relaciones positivas moderadas como **alcalinidad y ceniza con .76** tambien entre **intensidad con proantocianidina .68** **proantocianidina con fenoles totales .62** los **flavonoides con el magnesio .57** pero tambien relaciones negativas como **no flavonoides fenoles con el magnesio -.51** y logicamente la de **flavonoides con no flavonoides con -.63** tambien la de **matiz con la intensidad con -.56** .
+
+
+Sin embargo las relaciones no son lo suficiente fuertes para intentar hacer una regresión lineal múltiple, no obstante es importante notar que **los estudios realizados en este viñedo muestran que tiene un mayor grado de magnesio** en comparación a los otros viñedos.
+
+
+
+
+# Conclusiones #
+
+### Viñedo 1 ###
+
+Para el primer viñedo podemos concluir que la intensidad del vino esta moderadamente influenciada por el total de fenoles, los flavonoides y la prolina, ya que basandonos en nuestro modelo de regresión, las variables antes mencionadas afectan la intensidad de forma positiva.
+
+Además las muestras indican que este viñedo tiene una mayor cantidad de alcohol, una menor alcalinidad y casi dos veces más prolina y una mayor cantidad de magnesio en comparación con los otros viñedos.
+
+
+
+### Viñedo 2 ###
+
+Para el segundo viñedo podemos inferir que el nivel de los flavonoides esta moderadamente influidos por el total de fenoles, la proantocianidina y el nivel de oxigeno diluido, en promedio tiene menor cantidad de magnesio que los otros viñedos
+
+
+
+### Viñedo 3 ###
+
+Para el tercer viñedo el matiz es menor pero tiene mayor intensidad, duplicando la intensidad del viñedo 2, además la intensidad esta relacionada con la proantocianidina moderadamente, en contraparte tiene menor cantidad de flavonoides.
+
+
+
+

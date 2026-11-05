@@ -1,0 +1,126 @@
+---
+title: "Regresion Polinomial Virus"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-10-21"
+output: pdf_document
+---
+```{r setup, include=FALSE, message=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(splines)
+```
+
+Nota: Es importante recordar que el término lineal se refiere a la potencia de los parametros $\beta$.
+
+Cargamos los datos con los que trabajaremos que son observaciones de cargas virales desde el primer día que se observan sintomas hasta cumplir la cuarentena
+
+```{r}
+carga_viral<- c(8.33, 8.23, 7.17, 7.14, 7.31, 7.60, 7.94, 8.30, 8.76, 8.71, 9.71,
+          10.26, 10.91, 11.67, 11.76, 12.81, 13.30, 13.88, 14.59,
+          14.05, 14.48, 14.92, 14.37, 14.63, 15.18, 14.51, 14.34, 
+          13.81, 13.0, 12.5, 11.04, 10.60, 9.5, 9.15, 8.15, 
+          7.14, 7.08,6.78,6.80,5.95,5.51)
+dias <- seq(from=0, to=40, by=1)
+datos <- data.frame(dias=dias, carga_viral=carga_viral)
+head(datos)
+```
+Graficamos los datos
+
+```{r}
+plot(datos, ylab="carga_viral", xlab="dias", pch=19, ylim=c(0, 16), las=1)
+abline(h = 8.5, col = "blue",lty="dotted")
+text(x=20, y=8, 'contagioso', col='tomato')
+```
+
+
+```{r}
+reg_0<-lm(dias~carga_viral-1, data = datos)
+summary(reg_0)
+```
+
+
+Realizamos una regresión lineal
+```{r}
+reg_1<-lm(carga_viral~dias-1, data = datos)
+summary(reg_1)
+```
+¿que debemos quitar para mejorar el modelo?
+Quitamos el intercepto
+
+```{r}
+cor(datos)
+```
+
+### Modelo Polinomial
+
+```{r}
+reg_pol <- lm(carga_viral ~ dias + I(dias^2), data=datos)
+summary(reg_pol)
+```
+
+```{r}
+reg_pol_2 <- lm(carga_viral ~ dias + I(dias^2) + I(dias^3), data=datos)
+summary(reg_pol_2)
+```
+```{r}
+reg_pol_3 <- lm(carga_viral ~ dias + I(dias^2) + I(dias^3) +I(dias^4), data=datos)
+summary(reg_pol_3)
+```
+
+Podemos crear modelos con splines (cortes)
+
+
+```{r}
+reg_spli <- lm(carga_viral~ bs(dias, knots=c(4, 25), degree=3), data=datos)
+summary(reg_spli)
+```
+graficamos los splines
+
+```{r}
+plot(datos, ylab="carga_viral", xlab="dias", pch=19, ylim=c(0, 16), las=1)
+abline(v=4, lty="dotted", col='pink')
+abline(v=25, lty="dotted", col='orange')
+text(x=5, y=0.3, 't=4', col='blue')
+text(x=26, y=0.3, 't=25', col='blue')
+```
+
+
+Comparamos los modelos
+
+```{r}
+plot(datos, ylab="carga_viral", xlab="dias", pch=19, ylim=c(0,16))
+i <- order(dias)
+lines(dias[i], fitted(reg_1)[i], col='red', lwd=3)
+lines(dias[i], fitted(reg_pol_2)[i], col='blue', lwd=3)
+lines(dias[i], fitted(reg_spli)[i], col='green', lwd=3)
+legend("bottomright", lwd=c(3, 3, 3), col=c('red', 'blue', 'green'),
+       legend=c("Regresion Lineal", 
+                "Regresión Polinomial grado 3",
+                "Regresion Polinomial con splins"), bty="n")
+abline(v=c(4, 25), lty='dotted', col="purple") 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+y_true <- softdrink$tiempo
+y_hat1 <- predict(mod1, newdata=softdrink)
+y_hat2 <- predict(mod2, newdata=softdrink)
+
+mse1 <- mean((y_true - y_hat1)^2)
+mse2 <- mean((y_true - y_hat2)^2)
+cbind(mse1, mse2)
+```
+
+

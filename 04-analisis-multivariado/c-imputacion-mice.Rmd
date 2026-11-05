@@ -1,0 +1,117 @@
+---
+title: "MICE-Multi (Borrador)"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-10-22"
+output: pdf_document
+---
+
+```{r, message=FALSE}
+library(mice)
+library(dplyr)
+library(readxl)
+library(naniar)
+```
+
+
+Cargamos los datos
+```{r}
+datos<-read.csv("datos/Medidas_Corporales.csv")
+```
+
+
+Contamos los NA por columna
+
+```{r}
+faltantes_datos_1<-apply(X = is.na(datos), MARGIN = 2, FUN = sum)
+faltantes_datos_1
+```
+
+
+Podemos ver los porcentajes de datos faltantes
+
+```{r}
+sapply(datos, function(x) mean(is.na(x)) * 100)
+
+```
+
+tambien podemos hacerlo de forma grafica
+
+```{r}
+vis_miss(datos)
+```
+
+## Identificación del Mecanismo de Falta de datos
+
+Primero necesitamos identificar el Mecanismo de Falta de datos: MCAR, MAR MNAR, siempre deseamos que el mecanismo de falta de datos sea del tipo MAR que es el más realista posible. Figura 1
+
+Es importante considerar que en muchos casos cuando imputamos tendremos valores sesgados y aumentamos la varianza de los datos, esto es normal porque estamos tratando de imputar datos que no conocemos y no tenemos con que comparar si esta cercano a la realidad o no, por eso importante identificar el mecanismo de falta de datos ya que nos ayuda a mejorar el proceso de imputación.
+
+*(Figura omitida: Mecanismos de falta de datos)*
+
+*(Figura omitida: Tratamiento de datos Faltantes)*
+
+
+\newpage
+## Selección del método de imputación 
+
+El método de imputación de cada variable lo definimos nosotros considerando la clase de variable (continua, factor, discreta, etc.) naturalemnte cada método de imputación tiene sus ventajas y desventajas: por ejemplo imputar valores sobre la linea de regesión, inflar la distribución, tener mucha varianza, repetir el mismo valor imputado para diferentes observaciones, etc.
+*(Figura omitida: Eferecto de los Mecanismos de falta de datos)*
+
+
+\newpage
+
+## Selección de variables predictoras
+
+Una vez que decidimos el método de imputación lo siguiente es decidir las variables predictoras o variables que usaremos para el proceso de imputación, es decir, si yo quiero imputar con una regresión lineal puedo o no cupar las variables restantes como regresores, obviamente hay que evaluar que tan bien ajusta el modelo y que variables son significativas hasta obtener un buen modelo de regresión con el cual imputar, esto se debe hacer para cada variable a imputar.
+
+*(Figura omitida: Métodos de Imputación)*
+
+
+## MICE:Multivariate Imputation By Chainded Equations
+
+Como vimos en clase existen casos donde la falta de datos es en muchas variables y por lo tanto el problema de imputación se vuelve multivariado, el algoritmo MICE permite hacer imputaciones cuando la falta de datos es multivariada y además lo hace mediante imputación múltiple como vimos en clase, la imputación multiple es estimar varios valores para un mismo dato faltante y despues mezclarlos mediante la regal de Rúbin, o uan regla que nosotros querramos.
+
+## Número de imputaciones
+El número es cuantos valores estimamos para un solo dato faltante, en otras palabras es cuantos datasets completos obtenemos al final de la imputación, 
+
+
+## Ejemplo
+
+Imputaremos los datos faltantes de nuestra base de datos y les especificamos que con que metodo deseamos imputar cada variable y con 8 valores para cada dato faltante
+
+
+```{r}
+ imp <- mice(datos, meth = c("norm.nob", "pmm", "mean", "norm.nob","pmm","mean", "pmm", "norm"), m=8)
+```
+
+Obtenemos la base completa con los datos ya imputados
+
+```{r}
+imputacion<-complete(imp, 1)
+head(imputacion)
+```
+
+Por ejemplo para el ciclo menstrual la imputación nos da 4.8, esto es posible? 
+
+¿Como solucionarías esto?
+
+## Análisis visula de las distribuciones de los datos antes y despues de la imputación
+
+Deseamos que la distribución de los datos se mantenga, por ejemplo para edad tenemos 
+```{r}
+par(mfrow=c(1,2))
+hist(datos$Edad, main="edad-sin-imp", xlab="edad", col="blue")
+hist(imputacion$Edad, main="edad-imp", xlab="edad", col="red")
+ 
+```
+
+Para ciclo menstrual
+```{r}
+par(mfrow=c(1,2))
+hist(datos$Respiracion, main="ciclo-sin-imp", xlab="edad", col="blue")
+hist(imputacion$Respiracion, main="ciclo-imp", xlab="edad", col="red")
+ 
+```
+
+Es necesario examinar al menos las distribuciones de los datos antes y despues de la imputación
+

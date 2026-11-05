@@ -1,0 +1,150 @@
+---
+title: "K-S test"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-09-08"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(goftest)
+library(nortest)
+```
+
+###KS TEST###
+
+
+Generamos una muestra
+
+```{r}
+n <- 50      
+data <- rnorm(n, mean = 0, sd = 1) 
+```
+
+Ordenamos los datos de menor a mayor
+```{r}
+data_sorted <- sort(data)
+```
+
+
+CDF teoricos
+
+```{r}
+theo_cdf <- function(x) { pnorm(x, mean = 0, sd = 1) }
+```
+
+ECDF empirico  (los datos)
+```{r}
+emp_cdf <- ecdf(faithful$eruptions)
+```
+
+Calculamos D
+
+```{r}
+ks_D <- numeric(n)
+for (i in 1:n) {
+
+d1 <- abs((i / n) - theo_cdf(data_sorted[i]))
+d2 <- abs(((i - 1) / n) - theo_cdf(data_sorted[i]))
+  
+  ks_D[i] <- max(d1, d2)
+}
+```
+  
+
+Buscamos la distancia maxima
+
+```{r}
+estadistica_D <- max(ks_D)
+```
+
+Visualizacion
+
+```{r}
+plot(emp_cdf, main = "Kolmogorov-Smirnov ", 
+     xlab = "x", ylab = "Probabilidad acumulada (Fn vs F)",
+     xlim = c(-3, 3), verticals = TRUE, do.points = FALSE, lwd = 2)
+```
+
+
+# Overlay Theoretical CDF
+
+```{r}
+curve(theo_cdf, from = -3, to = 3, add = TRUE, col = "blue", lwd = 2, lty = 2)
+segments(x0 = x_at_max, y0 = y_theo, 
+         x1 = x_at_max, y1 = y_emp_plot, 
+         col = "red", lwd = 3)
+
+```
+
+```{r}
+ks.test(data, "pois", mean=0, sd=1)
+```
+
+
+
+Cragamos los datos faithful
+
+```{r}
+data(faithful)
+datos<-faithful
+```
+
+
+Tenemos que comparar dos distribuciones empiricas
+
+```{r}
+ecdf_1=ecdf(datos$waiting)
+ecdf_1
+```
+
+```{r}
+ggplot(datos, aes(waiting)) + stat_ecdf(geom = "step")
+```
+
+```{r}
+ecdf_2=ecdf(datos$eruptions)
+ecdf_2
+```
+
+```{r}
+ggplot(datos, aes(eruptions)) + stat_ecdf(geom = "step")
+```
+
+
+```{r}
+ks.test(datos$eruptions, datos$waiting  , alternative = "two.sided")
+```
+
+Haremos una revisión visual de la función de densidad de los datos
+
+```{r}
+ggplot(datos, aes(x=waiting )) + geom_density(color="blue", fill="cyan")
+```
+
+Creamos datos aleatorios de una distribución
+
+```{r}
+simu<- rnorm(15, 1,4)
+simu
+```
+
+
+```{r}
+ks.test(simu, "pnorm")
+```
+
+
+#####Cramer Von misses
+
+
+```{r}
+cvm.test(simu)
+```
+
+```{r}
+ad.test(simu)
+```
+
+
+

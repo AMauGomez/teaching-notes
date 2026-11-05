@@ -1,0 +1,88 @@
+---
+title: "Wilcoxon Test, Mann-Whitney Test"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-08-21"
+output: pdf_document
+---
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(GGally)
+library(ggplot2)
+
+```
+Primero cargamos nuestra base de datos
+
+```{r}
+datos<-read_xlsx("datos/wine.xlsx")
+datos$Class<-factor(datos$Class)
+```
+
+Creamos subconjuntos dependiendo del viñedo de procedencia
+
+```{r}
+vinedo_1.1<-subset(datos, datos$Class==1.1)
+vinedo_1.2<-subset(datos, datos$Class==1.2)
+vinedo_1<- merge(x = vinedo_1.1, y = vinedo_1.2, all = TRUE)
+vinedo_2<-subset(datos, datos$Class==2)
+vinedo_3<-subset(datos, datos$Class==3)
+```
+
+Las mediciones del viñedo_1.1 y viñedo_1.2 corresponden a mediciones hechas a los vinos hechos con uvas del mismo viñedo  antes y despues de la aplicación de un nuevo fertilizante. (Pareado)
+Es decir queremos saber si las distribuciones son iguales o difieren por una traslación, es decir si tienen la misma forma pero diferente localización.
+
+```{r}
+a<-vinedo_1.1["Alcohol"]
+b<-vinedo_1.2["Alcohol"]
+c<-cbind(a,b)
+```
+
+```{r}
+colnames(c)[1]<-"antes"
+colnames(c)[2]<- "despues"
+dif<-cbind(c, dif=c$antes-c$despues)
+```
+
+
+Ordenamos de menor a mayor (si lo quisieramos hacer a mano explicación de la clase)
+
+```{r}
+orden<-order(dif$dif)
+orden
+```
+```{r}
+sort(dif$dif)
+```
+
+
+```{r}
+wilcox.test(dif$antes, dif$despues, paired = T, conf.int = T)
+```
+
+### Prueba de Man-Whitney
+
+Si ahora queremos saber si los viñedos  son independientes, nuestra prueba de hipotesis es sobre si la distribución es la misma para ambas muestras o son diferentes (no es necesario que las muestras sean del mismo tamaño o que sean pareadas)
+
+
+```{r}
+m1<-vinedo_2["Alcalinity"]
+m2<-vinedo_3["Alcalinity"]
+mezcla<-rbind(m1, m2)
+```
+
+Si lo quisieramos hacer a mano debebos obtener el rango de cada dato para cada grupo
+```{r}
+sort(mezcla$Alcalinity)
+```
+
+(Explicación en clase para hacerlo a mano)
+
+```{r}
+wilcox.test(vinedo_2$Alcalinity, vinedo_3$Alcalinity)
+```
+
+
+
+
+
+

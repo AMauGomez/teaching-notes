@@ -1,0 +1,128 @@
+---
+title: "Geopol"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-08-28"
+output: pdf_document
+---
+
+```{r, include=FALSE, message=FALSE}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(lmtest)
+library(stats)
+library(FactoMineR)
+library(factoextra)
+library(psych)
+```
+
+Cargamos la base
+
+```{r}
+datos<-read.csv("datos/geopol.csv")
+```
+
+PCA sin columna de nombres
+
+```{r}
+rownames(datos)=datos$PAIS
+datos$PAIS= NULL
+```
+
+PCA centrado, la matrix debe ser númerica
+
+```{r}
+PCA_centrado<-prcomp(datos, center=TRUE, scale=TRUE)
+
+```
+
+Eigenvalues
+
+
+```{r}
+summary(datos)
+```
+
+
+```{r}
+resumen<-describe(datos, fast=TRUE)
+resumen
+```
+
+
+
+```{r}
+eigenvalues<-get_eigenvalue(PCA_centrado)
+eigenvalues
+```
+Grafica de Componentes
+
+```{r, fig.width=8, fig.height=3}
+fviz_screeplot(PCA_centrado, main="Gráfico de Componentes", addlabels=TRUE)
+```
+
+
+
+Contribución de Varianza (Números)
+
+```{r}
+varianza<-get_pca_var(PCA_centrado)
+head(varianza$contrib)
+```
+
+
+Contribución de Varianza (Gráficas)
+```{r, fig.width=7, fig.height=3 }
+par(mfrow = c(1, 2))
+fviz_contrib(PCA_centrado, choice = "var", axes = 1, top = 6)
+fviz_contrib(PCA_centrado, choice = "var", axes = 2, top = 6)
+```
+
+
+
+Visualización de la dirección de las variables
+
+```{r, fig.width=7, fig.height=4}
+fviz_pca_var(PCA_centrado, col.var = "contrib", repel =TRUE,gradient.cols = c("grey", "black"))
+```
+
+### Análisis Individual ###
+
+Podemos ver la influencia de cada observación en los componentes principales
+
+```{r}
+ind<-get_pca_ind(PCA_centrado)
+ind$contrib[1:10,1:2]
+```
+
+Visulaización de las observaciones en el biplot
+
+```{r, fig.width=7, fig.height=4}
+fviz_pca_ind(PCA_centrado, col.ind = "contrib", 
+             gradient.cols = c("lightgrey", "black"),
+             col.var="green",
+             repel = TRUE
+             )
+```
+
+
+Visualización de variables y observaciones
+
+```{r}
+fviz_pca_biplot(PCA_centrado, repel = TRUE,
+                col.var = "black", 
+                col.ind = "grey" 
+                )
+```
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+.Rhistory
+.RData
+*_files/
+*.html
+# datos de terceros: no se suben
+*/datos/*

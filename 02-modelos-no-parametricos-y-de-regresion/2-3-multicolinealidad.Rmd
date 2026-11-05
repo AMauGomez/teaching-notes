@@ -1,0 +1,55 @@
+---
+title: "Multicolinealidad"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-11-04"
+output: pdf_document
+---
+
+```{r, message=FALSE}
+library(dplyr)
+library(readxl)
+library(MASS)
+```
+
+Cargamos los datos
+
+```{r}
+datos<-read_xlsx("datos/PCOS_data_without_infertility_ready.xlsx", sheet=2)
+datos<-datos[,-c(1,11,14,22,28)]
+```
+
+Queremos hacer una regresión que nos ayude a determinar la edad de la persona usando las otras variables
+
+
+```{r}
+lm_vacio<-lm(datos$`Age (yrs)`~1, datos)
+summary(lm_vacio)
+```
+
+```{r}
+lm_completo<-lm(datos$`Age (yrs)` ~., datos)
+summary(lm_completo)
+```
+
+```{r}
+lm_forward
+```
+
+
+```{r}
+lm_forward<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "forward")
+summary(lm_forward)
+```
+
+
+```{r}
+lm_backward<-step(lm_completo, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "backward")
+summary(lm_backward)
+```
+
+
+
+```{r}
+lm_stepwise<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "both")
+summary(lm_stepwise)
+```

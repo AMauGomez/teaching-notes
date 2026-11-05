@@ -1,0 +1,103 @@
+---
+title: "Outliers Influyentes"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-10-11"
+output: pdf_document
+---
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(GGally)
+library(ggplot2)
+library(car)
+```
+
+Cargamos los datos 
+
+```{r}
+url <- "https://raw.githubusercontent.com/fhernanb/datos/master/medidas_cuerpo2"
+datos <- read.table(file=url, sep="\t", header=TRUE)
+datos<- rename(datos, Año=Ano)
+
+datos_1<-select(datos, c(Sexo, Peso, Estatura, circun_cuello, circun_muneca))
+head(datos, n=5)
+
+```
+
+Hacemos un diagrama de pares
+
+```{r}
+ggpairs(datos_1,aes(color=Sexo,alpha=0.5),
+        upper= list(continuous= wrap("cor",size=2.5)))
+```
+
+
+```{r}
+summary(datos_1)
+```
+
+Identificamos los outliers
+
+```{r}
+reg_1 <- lm(Peso ~ Estatura + circun_cuello + circun_muneca, data=datos)
+summary(reg_1)
+```
+Hacemos un modelo con las variables significativas
+
+```{r}
+reg_2<-lm(Peso ~ circun_cuello, data= datos)
+summary(reg_2)
+
+```
+
+Comparamos los estimadores de las betas y las R^2 
+
+```{r}
+summary(datos)
+```
+
+
+Hacemos un diagrama de la regresión
+
+```{r}
+with(datos, 
+     plot(x=circun_cuello, y=Peso, pch=19, las=1,xlab="Circunferencia cuello (cm)", ylab="Peso (Kg)"))
+
+abline(reg_2, lwd=3, col='blue2')
+
+text(x=34, y=95, expression(hat(Peso) == -44.61 + 3.10 * Cir.cuello), 
+     col='blue3' )
+```
+
+
+Calculamos la distancia de cook para identificar los valores influyentes en la regersión
+
+```{r}
+cooks.distance(reg_2)
+```
+ VIsualizamos los datos
+ 
+```{r}
+cutoff <- 4 / (26-2-2)  
+plot(reg_2, which=4, cook.levels=cutoff, las=1)
+abline(h=cutoff, lty="dashed", col="red")
+```
+ 
+Realizamos una regersión sin los valores influyentes (11) y ¿(12,13,8?)
+
+```{r}
+datos_11<-datos_1[-11,]
+reg_11<-lm(Peso ~ circun_cuello , data= datos_11)
+summary(reg_11)
+
+```
+
+```{r}
+datos_52<-datos_1[-52,]
+```
+
+```{r}
+reg_52<-lm(Peso ~ circun_cuello , data= datos_52)
+summary(reg_52)
+```
+

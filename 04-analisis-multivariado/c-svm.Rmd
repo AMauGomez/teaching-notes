@@ -1,0 +1,173 @@
+---
+title: "SVM"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-09-23"
+output: pdf_document
+always_allow_html: true
+---
+
+```{r, include=F, message=F }
+library(tidyverse)
+library(e1071) #SVM
+library(kernlab) #KSVM con kernel
+library(plotly) #Graficas en 3d
+library(caTools) #Crear las muestras de entrenamiento y prueba
+library(caret) #Validación cruzada
+```
+
+Cargamos los datos que queremos clasificar, como es usual se recomienda hacer una Análisis Exploratorio y/o Descriptivo de los datos
+
+```{r}
+datos<-read.csv("datos/Datos_astronomicos.csv")
+```
+
+La base contiene datos sobre galaxias, estrellas y quasar, nuestro objetivo es clasificar los datos haciendo uso del SVM, ya que solo conocemos como clasificar a las estrellas y galaxias, por lo cual queremos saber si es posible encontrar un hiperplano que difiera estas tres clases.
+
+```{r}
+head(datos)
+```
+Graficamos la cantidad de observaciones en cada clase
+
+```{r}
+plot_1 <- ggplotly(ggplot(datos, aes(class, fill = class)) + geom_bar() + theme_bw())
+plot_1
+```
+
+Graficamos los datos usando como ejes las coordenadas en el espacio de cada observación 
+
+```{r}
+plot_2<-ggplot(datos, aes(x=ra,y=dec, color=class)) + geom_point()
+plot_2
+```
+
+Como podemos observar es casi imposible poder diferencias los grupos, más aún, no parece que exista una forma de dividir las observaciones en grupos, ¿o si?
+
+```{r}
+plot_3<- plot_ly(datos, x = datos$ra, y = datos$dec, z = datos$redshift, color = ~datos$class)  %>%
+  add_markers() %>%
+  layout(scene = list(xaxis = list(title = 'x-axis'),
+                     yaxis = list(title = 'y-axis'),
+                     zaxis = list(title = 'z-axis')))
+plot_3
+```
+Podemos notar que al agregar una dimensión más es posible encontrar un hiperplano que más o menos nos ayude a clasificar los datos, por lo cual preparamos la base para hacer el modelo, recordemos que necesitamos puras variables númericas y la variable que queremos clasificar debe ser clase factor
+
+```{r}
+datos <- datos[,-c(1,10,13,18)]
+```
+
+
+```{r}
+datos$class<-as.factor(datos$class)
+class(datos$class)
+```
+
+Creamos nuestras bases de entrenamiento y prueba, tomamos una muestra aleatoria del 75% para el entrenamiento y el resto para validar nuestro modelo
+
+```{r}
+set.seed(1)
+muestra<-sample.split(datos$class, SplitRatio = 0.75)
+entrenamiento<-datos[muestra,]
+prueba<-datos[!(muestra),]
+dim(prueba)
+dim(entrenamiento)
+```
+
+### Creación del Modelo (Lineal) ###
+
+Creamos el modelo lineal 
+
+```{r}
+svm_lin<-ksvm(class~., data=entrenamiento, scale=F, kernel="vanilladot")
+```
+
+hacemos la predicción con el modelo antes planteado
+
+```{r}
+eva_lin<- predict(svm_lin, prueba[,-11])
+```
+
+Obtenemos la matriz de confusión para evaluar nuestro modelo
+
+```{r}
+matriz_de_confusión_lin<-confusionMatrix(eva_lin,prueba$class)
+matriz_de_confusión_lin
+```
+### Creación del Modelo (Polinomial) ###
+
+
+```{r}
+svm_poly <- ksvm(class~ ., data = entrenamiento, scale = FALSE, kernel = "polydot")
+eva_poly <- predict(svm_poly, prueba[,-11])
+```
+  
+```{r}
+matriz_de_confusión_pol<-confusionMatrix(eva_poly,prueba$class)
+matriz_de_confusión_pol
+```
+
+Model_RBF <- ksvm(class~ ., data = train, scale = FALSE, kernel = "rbfdot")
+Eval_RBF <- predict(Model_RBF, test[,-11])
+
+  #confusion matrix - RBF Kernel
+  confusionMatrix(Eval_RBF,test$class)
+### Creación del Modelo (RBF: Radial Basis Function, elipsoides)
+
+
+```{r}
+svm_RBF<-ksvm(class~ ., data = entrenamiento, scale = FALSE, kernel = "rbfdot")
+eva_RBF<- predict(svm_RBF, prueba[,-11])
+
+```
+
+
+Creamos la tabal de confusión
+
+```{r}
+matriz_de_confusión_RBF<-confusionMatrix(eva_RBF,prueba$class)
+matriz_de_confusión_RBF
+```
+
+
+### Evaluación del Modelo ###
+
+Realizaremos una validación cruzada (method=cv), podemos definir el número de subsets con las que queremos hacer la validación, en este caso 5 subsets
+
+
+```{r}
+trainControl <- trainControl(method="cv", number=5)
+metric <- "Accuracy"
+set.seed(100)
+```
+
+Ahora necesitamos calibrar el tamaño del Margen (Costo=C) y para otros modelos como los polinomicos la dimensión (d) y para RBF el radio (gamma), por lo cual hacemos una lista de diferentes valores que pueden tomar estas variables
+
+```{r}
+grid <- expand.grid(.sigma=c(0.01,0.02,0.03,0.04), .C=c(5,6,7,8) )
+```
+
+Ahora ajustamos el modelo
+
+```{r}
+fit.svm <- train(class~., data=entrenamiento, method="svmRadial", metric=metric, tuneGrid=grid, trControl=trainControl)
+
+print(fit.svm)
+```
+
+Finalmente revisamos para que valores se consigue una menor misclasificación, es decir, una mayor exactitud al clasificar los datos.
+
+```{r}
+plot(fit.svm)
+```
+Por lo cual tendríamos que la mejor calibración es con c=8 y sigma=0.030, así que haremos la predicción de los datos usando este modelo
+
+```{r}
+eval_svm_fit<- predict(fit.svm, prueba[, -11])
+matriz_de_confusión_svm_fit<-confusionMatrix(eval_svm_fit, prueba$class)
+matriz_de_confusión_svm_fit
+```
+
+
+
+
+

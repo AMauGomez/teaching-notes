@@ -1,0 +1,99 @@
+---
+title: "Regresión con KNN"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-10-02"
+output: pdf_document
+---
+
+```{r, include=FALSE, message=FALSE}
+library(readxl)
+library(dplyr) 
+library(caret) #Crear el modelo
+library(caTools) #Crear las bases de entrenamiento y prueba
+```
+
+Cargamos los datos y seleccionamos las variables que usaremos
+
+```{r}
+datos<-read.csv("datos/ile_2019_2021.csv")
+datos_1<-datos[, c("edad","edad_primera_menstruacion", "edad_inicio_vida_sexual", "semanas_embarazo", "numero_hijos", "numero_embarazos", "numero_abortos", "numero_partos", "numero_cesareas", "numero_iles") ]
+datos_1<-na.omit(datos_1)
+```
+
+Usaremos el algoritmo del los k vecinos más cercanos, es importante recordar que este es un método no parametrico donde la idea pirncipal es clasificar las nuevas observaciones junto a la k observaciones más cercanas que compartan similitudes sus variables.
+
+Es importante standarizar los datos ya que estaremos usando una medida de distancia bien definida, queremos hacer una regresión para predecir el numero de ILES, por lo cual primero separaremos los datos para entrenamiento y para prueba.
+
+Creamos los subsets
+
+```{r}
+set.seed(1)
+muestra<-sample.split(datos_1$numero_iles, SplitRatio = 0.75)
+entrenamiento<-datos_1[muestra,]
+prueba<-datos_1[!(muestra),]
+```
+
+Podemos preprocesar los datos directamente en la función de modelo mediante preProcess y usar el método knn como criterio para hacer la regresión
+
+```{r}
+modelo_1 <- train(numero_iles~.,
+  data = entrenamiento,
+  method = 'knn',
+  preProcess = c("center", "scale")
+)
+modelo_1
+```
+
+Para este tipos de modelos se utiliza el "root mean squared error" que simplemente es la raiz de la suma de las predicciones menos el valor real al cuadrado sobre el número de observaciones, por lo cual la regla de decisión es escoger al numero de vecino K que tenga la el menor RMSE, tambien tenemos otras medidas de asociación como lo son la R cuadrada el y el Error Absoluto Medio MAE, en este ultimo queremos lo más cercano a cero.
+
+```{r}
+plot(modelo_1)
+```
+
+Con este primer modelo podriamos pensar que k=7 vecinos es el número ideal, sin embargo, hay que evaluar el modelo.
+
+Ahora evaluaremos el modelo, para esto utilizaremos la validación cruzada y revisaremos que el modelo sea consistente en todos los folds
+
+```{r}
+set.seed(2)
+cross_val<-trainControl(method = "cv", number = 10)
+```
+
+```{r}
+set.seed(2)
+modelo_val <- train(numero_iles~.,
+  data = entrenamiento,
+  method = 'knn',
+  preProcess = c("center", "scale"),
+  trControl= cross_val
+)
+modelo_val
+```
+
+```{r}
+plot(modelo_val)
+```
+Con la validación cruzada obtenemos que el núermo de vecinos debe ser k=5, evaluamos el modelo recordando nuestra medida de evaluación es RMSE
+
+```{r}
+prueba_valores_objetivo<-subset(prueba, select=numero_iles)[,1]
+prueba_valores_observados<-subset(prueba, select=-c(numero_iles))
+predicción<-predict(modelo_val, prueba_valores_observados)
+```
+
+Comparamos las predicciones con los valores verdaderos
+```{r}
+RMSE_1<-sqrt(mean((prueba_valores_objetivo - predicción)^2))
+RMSE_1
+```
+
+Calculamos la R'2
+
+```{r}
+R_2<-cor(prueba_valores_objetivo, predicción) ^ 2
+R_2
+```
+
+Notamos que los valores son cercanos obtenidos en la evaluación superan por muy poco los resultados esperados, por lo cual es un modelo decente.
+
+

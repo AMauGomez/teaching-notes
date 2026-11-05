@@ -1,0 +1,66 @@
+---
+title: "Fisher's Test"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-09-02"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+(Explicación de su funcionamiento en clase)
+
+Cargamos nuestros datos, donde queremos ver si existe relación entre las personas que tienen mutación en el gen AS34 y que el paciente sea inmune a la brucelosis.
+
+```{r}
+datos<-data.frame( paciente =c("inmune", "inmune", "no inmune", "inmune", "inmune", "no inmune", "inmune",  "no inmune", "no inmune", "inmune", "no inmune","no inmune", "no inmune", "inmune", "no inmune", "no inmune", "inmune","no inmune", "inmune", "inmune") , gen_AS34 = c(FALSE, FALSE, TRUE, TRUE,  FALSE, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, TRUE,  FALSE, FALSE, TRUE, FALSE, FALSE, TRUE))
+```
+
+```{r}
+datos
+```
+
+Creamos la tabla de contingencia
+```{r}
+tabla_de_contingencia<-table(datos$paciente, datos$gen_AS34, dnn = c("Paciente", "mutación"))
+tabla_de_contingencia
+```
+
+Realizamos el test de Fisher
+
+```{r}
+fisher.test(tabla_de_contingencia)
+```
+
+
+### McNemar Test
+
+Explicación en clase
+
+Queremos comparar los resultados sobre el estudio de 10 sujetos que se sometieron a dos pruebas de lógica y aritmetica básica, las pruebas se realizaron antes y despues que se les dio una dosis de cafeina.
+
+```{r}
+datos_1<-data.frame(sujeto=rep(1:10, each=2),
+                    Examen=c("antes", "despues","antes", "despues","antes", "despues","antes", "despues","antes", "despues","antes", "despues","antes", "despues","antes", "despues","antes", "despues","antes", "despues"),
+                    Aprobó=c("SI", "NO","SI", "SI", "NO","SI", "NO", "SI", "NO", "SI","NO", "SI", "NO", "SI", "SI", "SI", "SI","NO","SI", "SI" ))
+```
+
+Creamos la tabla de contingencia
+
+```{r}
+datos_1<-spread(data=datos_1, key = Examen, value = Aprobó)
+datos_1
+```
+
+```{r}
+tabla_1<-table(Antes_de_la_dosis=datos_1$antes, Despues_de_la_dosis=datos_1$despues)
+tabla_1
+```
+
+Realizamos el test
+
+```{r}
+mcnemar.test(tabla_1)
+```
+

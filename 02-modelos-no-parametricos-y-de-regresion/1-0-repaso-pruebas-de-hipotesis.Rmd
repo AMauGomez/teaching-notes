@@ -1,0 +1,209 @@
+---
+title: "Pruebas de Hipótesis"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-04-18"
+output: pdf_document
+---
+
+```{r, echo=FALSE, include=FALSE}
+library(tidyverse)
+```
+# Función Potencia
+## Ejemplo 1
+
+Consideremos una muestra aleatoria $X_{1}, X_{2}, .., X_{n}$ de una distribución Normal $N(\mu, \sigma^2)$ con $\sigma^2$ conocida ($\sigma^2=130$) supongamos que queremos contrastar  hipotesis sobre la media $H_{0}:\mu \leq50$ vs $H_{1}:\mu>50$,  consideremos la región de rechazo C={Rechazar $H_{0}$ si $\bar{X}$ >50} es importante mencionar que la región de rechazo solo sirve para ejemplificar, en clase revisaremos técnicas que nos ayudarán a encontrar estadísticas de prueba que sea más "eficientes".
+
+Calculando la función potencia para esta prueba, por definición tenemos que 
+
+$\pi(\mu)=P(X_{1}, X_{2}, .., X_{n} \in C| \mu)=P(\bar{X}>50|\mu)$
+
+Ya que $X_{1}, X_{2}, .., X_{n}$ son observaciones de una distribución Normal $N(\mu, \sigma^2)$, entonces 
+
+$\bar{X}\sim N(\mu,\sigma^2/n)$  por lo tanto la función potencia esta dada por
+ 
+$\pi(\mu)=P([(\bar{X}-\mu)/\sqrt( \sigma^2/n) ]> [50- \mu/\sqrt( 130/n)])$ 
+
+Como de lado izquierdo se distribuye $N(0,1)$ 
+
+$\pi(\mu)=P([Z ]> [50- \mu/\sqrt( \sigma^2/n)])=1- \phi([50- \mu/\sqrt( 130/n)])$
+
+Creamos nuestra función potencia
+
+```{r}
+potencia_mu<-function(mu, n){
+  cuantil_1<-(50-(mu))/sqrt(130/n) #Región de rechazo mayor a 50 (cambiar el 50 por 45, 40, ...)
+  pi_de_mu<-1-pnorm(cuantil_1)
+}
+```
+
+
+Graficando la función potencia para distintos tamaños de muestra 
+
+```{r}
+mu<-seq(40,60,0.01)
+muestras_n<-c(10, 50, 100,500,1000)
+plot(c(0,0), xlim=c(min(mu),max(mu)), ylim=c(0,1), ylab="", xlab="")
+for (n in muestras_n) {
+  Pi_mu<-potencia_mu(mu,n)
+  lines(mu, Pi_mu)
+}
+
+```
+
+¿Que gráfica relacionaría a cada tamaño de muestra? Explique su respuesta 
+
+Cambie la región de rechazo para otra estadística de prueba, digamos 45, 40, 55, etc. ¿Que pasa con las gráficas de la función potencia?
+
+## Ejemplo 2
+
+Ahora supongamos que queremos contrastar las hipotesis $H_0:p=p_0$ vs $H_1: p=p_1$  para una muestra de n observaciones Bernoulli, es fácil observar que una región de rechazo es
+C={Rechazar $H_0$ si $\sum\limits_{i=1}^{n} x_i\geq k^*$}.
+
+La región de rechazo y la constante $k^*$ puede ser obtenida haciendo uso del Lema Neyman-Pearson.
+
+Sea $H_0:p_0=1/5$ vs $H_1: p_1=3/5$ y suponga que tenemos distintas muestras de tamaño 15, 28, 98 ,125
+Si deseamos que $\alpha=.10$ ¿Cuanto debe valer $k^*$?
+
+$.10=\alpha$=P(Rechazar $H_0$|$H_0$ cierta)=P(Rechazar $H_0$ si $\sum\limits_{i=1}^{n} x_i \geq k^*$ | $p_0=1/5$)
+
+Es importante notar que bajo $H_0$ cierta la $\sum\limits_{i=1}^{n}x_i \sim Bin(n, p_0)$, entonces buscamos el punto $k^*$ en el que la $Bin(n, p_0)$ deja .10 de probabilidad en cola, notemos que la $k^*$ esta en función del tamaño de muestra, para los tamaños de muestra $15,28,98,125$ tenemos que la constante buscada es
+
+```{r}
+muestras_n_2<-c(15,28, 98,125)
+for (i in muestras_n_2) {
+  print(qbinom(.9, i, 1/5))
+}
+```
+
+De esta forma la $k^*$ de nuestra región de rechazo para una muestra de tamaño $15$ es $k^*=5$
+
+## Nota
+Es importante señalar que como la distribución binomial es discreta, existirán valores de $\alpha$ para los cuales no exista una $k^*$ entera, es decir, supongamos que nuestra región de rechazo es 
+C={Rechazar $H_0$ si $\sum\limits_{i=1}^{n} x_i \geq k^*=10$}y tenemos una muestra de 38 observaciones, nos piden que nuestra probabilidad de cometer el Error tipo I sea $\alpha=.12$
+
+P(Rechazar $H_0$ | $H_0$ cierta)
+
+=P($\sum\limits_{i=1}^{38} x_i\geq 10$ | $H_0:p_0=1/5$)
+
+=1-P($\sum\limits_{i=1}^{38} x_i< 10$| $H_0:p_0=1/5$)
+
+```{r}
+a_1<-1-pbinom(10, 38, 1/5) 
+a_1
+
+```
+
+Podemos notar que superamos la cota deseada ¿Es viable dejar este valor para $\alpha$?
+
+Una alternativa es cambiar la estadística de prueba, supongamos que ahora C={Rechazar $H_0$ si $\sum\limits_{i=1}^{n} x_i \geq k^*=11$}
+
+
+```{r}
+a_2<-1-pbinom(11, 38, 1/5)
+a_2
+```
+
+Ahora estamos dentro del rango deseado ¿es correcto cambiar nuestra estadística de prueba?
+
+Ahora supongamos que  a nuestra muestra le quitamos una observación, veamos que pasa si mantenemos nuestra región de rechazo original ($k^*=10$)
+
+```{r}
+a_3<-1-pbinom(10, 37, 1/5)
+a_3
+```
+
+Estamos dentro del rango, ¿Es correcto este procedimiento? Justifique su respuesta
+
+Creamos nuestra función potencia
+```{r}
+potencia_p<-function(n, p){
+  pi_de_p<-1-pbinom(10,n,p) 
+}
+```
+
+Graficamos para muestras distintas
+```{r}
+p<-seq(0,1,0.01)
+muestras_n_2<-c(15,28, 98,125)
+plot(c(0,0), xlim=c(min(p),max(p)), ylim=c(0,1), ylab="", xlab="")
+
+for (n in muestras_n_2) {
+  pi_de_p<-potencia_p(n,p)
+  lines(p, pi_de_p)
+}
+```
+
+¿Que gráfica relacionaría a cada tamaño de muestra? Explique su respuesta
+
+## Ejemplo 3
+
+
+Consideremos una muestra aleatoria $X_{1}, X_{2}, .., X_{n}$ de una distribución Normal $N(\mu, \sigma^2)$ con $\sigma^2$ conocida ($\sigma^2=25$) supongamos que queremos contrastar  hipotesis sobre la media $H_{0}:\mu =1$ vs $H_{1}:\mu \neq 1$,  consideremos la región de rechazo C={Rechazar $H_{0}$ si $|\bar{X} / (\sigma/ \sqrt{n})| >z_{\alpha/2}$}, notemos que es uan prueba de hipotesis de dos colas.
+
+Calculando la función potencia  
+
+$\pi(\mu)=P(X_{1}, X_{2}, .., X_{n} \in C)$=P($|\bar{X}/(\sigma/ \sqrt{n})|$ >$z_{\alpha/2}$)
+
+=P($\bar{X}/(\sigma/ \sqrt{n})$ >$z_{\alpha/2}$) + P($\bar{X}/(\sigma/ \sqrt{n})$ < - $z_{\alpha/2}$)
+
+=P($\bar{X}- \mu/(\sigma/ \sqrt{n})$ >$z_{\alpha/2}-\mu/ (\sigma/ \sqrt{n})$) + P($\bar{X} - \mu/(\sigma/ \sqrt{n})$ < - $z_{\alpha/2}-\mu/ (\sigma/ \sqrt{n})$)
+
+
+=P($Z$ >$z_{\alpha/2}-\mu/ (\sigma/ \sqrt{n})$) + P($Z$ < - $z_{\alpha/2}-\mu/ (\sigma/ \sqrt{n})$)
+
+
+=P($Z$ >$(z_{\alpha/2})-(\mu)(\sqrt{n})/ (\sigma)$) + P($Z$ < - $(z_{\alpha/2})-(\mu)(\sqrt{n})/ (\sigma)$)
+
+
+Notamos que nuestra función potencia depende de $\alpha$, del tamaño de nuestra muestra $n$ y de $\mu$, si fijamos 
+$\alpha=.05$ tenemos que 
+
+```{r}
+potencia_mu_1 <- function(mu_1,n,alpha=0.05, sigma=5){
+  cuantil_alpha_medios <- qnorm(alpha/2,lower.tail = FALSE)
+  pi_mu_1<- pnorm(cuantil_alpha_medios-(mu_1*sqrt(n)/sigma) , lower.tail = F) + pnorm(-cuantil_alpha_medios-(mu_1*sqrt(n)/sigma)) 
+}
+```
+
+
+Graficando la función potencia para distintos tamaños de muestra 
+
+```{r}
+mu_1<-seq(-10,10,0.01)
+muestras_n_2<-c(10, 50, 100,500,1000)
+plot(c(0,0), xlim=c(min(mu_1),max(mu_1)), ylim=c(0,1), ylab="", xlab="")
+for (n in muestras_n_2) {
+  pi_mu_1<-potencia_mu_1(mu_1,n)
+  lines(mu_1, pi_mu_1)
+}
+
+```
+
+
+
+Si ahora fijamos $\alpha=.15$, $\sigma=30$ y ampliamos el dominio de $\mu$ obtenemos
+
+
+```{r}
+potencia_mu_2 <- function(mu_1,n,alpha=0.15, sigma=30){
+  cuantil_alpha_medios <- qnorm(alpha/2,lower.tail = FALSE)
+  pi_mu_1<- pnorm(cuantil_alpha_medios-(mu_1*sqrt(n)/sigma) , lower.tail = F) + pnorm(-cuantil_alpha_medios-(mu_1*sqrt(n)/sigma)) 
+}
+```
+
+
+Graficando la función potencia para distintos tamaños de muestra 
+
+```{r}
+mu_1<-seq(-25,25,0.01)
+muestras_n_2<-c(10, 50, 100,500,1000)
+plot(c(0,0), xlim=c(min(mu_1),max(mu_1)), ylim=c(0,1), ylab="", xlab="")
+for (n in muestras_n_2) {
+  pi_mu_1<-potencia_mu_2(mu_1,n)
+  lines(mu_1, pi_mu_1)
+}
+
+```
+
+
+Identifique que gráfica corresponde a cada muestra y explique el comportamiento de las funciones potencia y como cambian dependiendo los valores de las variables $\mu$, $\sigma$ y $\alpha$.

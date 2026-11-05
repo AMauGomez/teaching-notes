@@ -1,0 +1,139 @@
+---
+title: "Análisis Factorial"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2025-03-12"
+output: pdf_document
+---
+```{r, include=FALSE, message=FALSE}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(lmtest)
+library(stats)
+library(FactoMineR)##FA
+library(factoextra)## FA
+library(psych)
+library(ggcorrplot)
+library(ggplot2)
+library(GGally)###Correlations
+library(GPArotation)
+library(qgraph)
+library(corrplot)
+```
+
+
+```{r, include=FALSE, message=FALSE, results=F}
+base = read.csv("datos/survey lung cancer.csv")
+datos= data.frame(base)
+datos<-datos[2:10]
+```
+
+
+```{r}
+corrplot.mixed(cor(datos), number.cex=0.5, tl.cex=.5)
+```
+
+
+Ahora verificaremos que exista la suficiente correlación entre las variables para poder hacer un analisis factorial, es decir estamos buscando que exista el factor común entre todas la variables, haciendo una prueba Kaiser-Meyer-Olkin, obtenemos los siguientes resultados
+
+```{r}
+KMO(datos)
+```
+
+0.57 es una medida baja, sin embargo,  podemos seguir con el analisis factorial, ahora seleccionaremos 2 formas de extraer factores: Por máxima verosimilitud y por minimos residuales.
+
+### Número de Factores ###
+
+
+Antes veamos cuantos factores son necesarios para nuestro analisis factorial, para ello revisaremos los eigenvalores de la matriz de correlacion.
+
+```{r}
+datos<-cor(datos)
+autovalores=eigen(datos)
+varianzatotal=autovalores$values/sum(autovalores$values)*100
+autovalores
+varianzatotal
+```
+
+Basandonos en la regla o criterio de Kaiser, tomaremos lo eigenvalores mayores a 1, en este caso son 4, sin embargo, la regla no es estricta sino una referencia de selección.
+
+Si ahora nos apoyamos en el porcentaje de varianza explicada notamos que con 3 factores obtenemos casi 50%
+
+```{r}
+sum(varianzatotal[1:3])
+```
+
+Y con 2 factores 35%
+
+
+```{r}
+sum(varianzatotal[1:2])
+```
+
+
+Por último realizamos un Scree plot para analizar gráficamente donde se observa la curva o "regla del codo" 
+
+```{r}
+scree(datos)
+```
+
+
+Notamos que en el 2 factor existe un cambio de dirección notable, por lo cual y ya que no existe una diferencia significativa en la explicación de la variaza, seleccionaremos solo 2 factores ya que tambien es más intuitiva su interpretación. No obstante se puede ahcer el ejercicio con más factores.
+
+### Tipo de Rotación de la Matriz Factorial y Método de Extracción de Factores ###
+
+
+Seleccionaremos la rotación del tipo equamax ya que combina el método varimax y quartimax, es decir, minimiza el número de factores y hace más fácil su visulaización. 
+
+Para el método de extración utilizaremos el de máxima verosimilitud.
+
+Haciendo el análisis de factores con 2 factores y rotación quartimax obtenemos:
+
+```{r}
+af_ver=fa(datos, nfactors = 2,  rotate ="quartimax", fm="mle" )
+af_minres=fa(datos, nfactors = 2, rotate ="quartimax", fm="minres" )
+```
+
+### Análisis Factorial Quartimax- MinRes ###
+
+```{r}
+af_minres$loadings
+```
+
+```{r}
+biplot(af_minres$score.cor, loadings(af_minres), cex=c(0.7,0.8), col = c("grey", "red"), 
+  xlab = "Factor 1", ylab = "Factor 2", 
+  main = "Análisis Factorial Quartimax- MinRes")
+```
+
+
+```{r, fig.width=8, fig.height=5}
+qgraph.loadings(af_minres$loadings)
+```
+
+```{r, fig.width=8, fig.height=5}
+fa.diagram(af_minres, main="Analisis Factorial por Quartimax- MinRes")
+```
+
+
+### Análisis Factorial Quartimax- MLE ###
+
+```{r}
+af_ver$loadings
+```
+
+```{r}
+biplot(af_minres$score.cor, loadings(af_minres), cex=c(0.7,0.8), col = c("grey", "blue"), 
+       xlab = "Factor 1", ylab = "Factor 2", 
+       main = "Análisis Factorial Quartimax- MLE")
+```
+
+```{r, fig.width=8, fig.height=4.8}
+qgraph.loadings(af_ver$loadings)
+```
+
+
+```{r, fig.width=8, fig.height=4.8}
+fa.diagram(af_ver, main="Analisis Factorial por Quartimax- MLE")
+```
+

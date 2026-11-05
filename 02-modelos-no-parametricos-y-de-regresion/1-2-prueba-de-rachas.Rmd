@@ -1,0 +1,130 @@
+---
+title: "Prueba de Rachas"
+author: "Gómez Jiménez Aaron Mauricio"
+date: "2024-08-14"
+output: pdf_document
+---
+
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(randtests)
+```
+
+Creamos una muestra a aleatoria de la distribucuión Normal
+```{r}
+set.seed(1)
+x<-rnorm(500, 0, 10)
+plot(x)
+```
+
+
+De esta muestra tomamos 1000 observaciones
+
+```{r}
+muestra<-sample(x, 100)
+plot(muestra)
+```
+Ahora creamos una variable dicotomica de 1 y 0, donde se le asigne el valor de 1 a la observación si es mayor a la media (5)
+
+```{r}
+muestra<-as.vector(muestra)
+muestra
+```
+
+```{r}
+dico.0<-ifelse(muestra >=0, "1", "0" )
+dico.0
+```
+
+```{r}
+n1=sum(dico.0 ==1)
+n1
+```
+Entoces n_2=56
+
+
+
+Para el corte en 3
+
+```{r}
+dico.3<-ifelse(muestra >=3, "1", "0" )
+dico.3
+```
+
+```{r}
+n1.1=sum(dico.3==1)
+n1.1
+```
+entonces n_2=61
+
+###########
+
+Creamos nuestras funciones de distribución
+
+Si r es par tenemos que la función esta dada por
+
+```{r}
+par<-function(n_1, n_2, r){
+  (2*choose((n_1)-1,(r/2) -1)*choose((n_2)-1,(r/2)-1))/choose(n_1+n_2, n_1)
+}
+```
+Si r es impar
+
+```{r}
+impar<-function(n_1, n_2, r){
+  (choose(n_1-1, (r-1)/2)* choose(n_2-1, (r-3)/2)+ choose(n_1-1, (r-3)/2)* choose(n_2-1, (r-1)/2))/choose(n_1+n_2, n_1)
+}
+```
+
+
+Ahora para la muestra revisaremos revisaremos cual es el P-value obtenido para la prueba de hipotes de aleatoridad si la región de rechazo es c={Rechazar H_0 si R>=47 o R<66}, lo que queremos es acumular lo mas cercano a 0.05 controlando las K_1 y K_2.
+
+62, 66
+```{r}
+a<-par(4, 6, 8)
+a
+```
+
+47, 45
+```{r}
+b<-impar(4, 6, 3)
+b
+```
+
+```{r}
+a+b
+```
+
+Usando la libreria randtest 
+
+```{r}
+runs.test(muestra)
+```
+
+
+```{r}
+runs.test(muestra, threshold=0)
+```
+
+```{r}
+runs.test(muestra, threshold=3)
+```
+
+```{r}
+runs.test(muestra, threshold=5)
+```
+
+```{r}
+y<-rpois(100, 2)
+y
+```
+
+```{r}
+sum(y==1)
+```
+
+```{r}
+runs.test(y, threshold = 3)
+```
+
