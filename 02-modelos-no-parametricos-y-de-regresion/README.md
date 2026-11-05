@@ -1,6 +1,6 @@
 # Modelos No Paramétricos y de Regresión
 
-Código de mis ayudantías, ordenado según el temario oficial de la Facultad de Ciencias, UNAM (clave 1639).
+Código de mis ayudantías y material complementario, ordenado según el temario oficial de la Facultad de Ciencias, UNAM (clave 1639).
 
 ## 1. Pruebas no paramétricas
 

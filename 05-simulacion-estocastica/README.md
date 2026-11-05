@@ -1,6 +1,6 @@
 # Simulación Estocástica
 
-Código de mis ayudantías, ordenado según el temario oficial de la Facultad de Ciencias, UNAM (clave 0873).
+Código de mis ayudantías y material complementario, ordenado según el temario oficial de la Facultad de Ciencias, UNAM (clave 0873).
 
 ## 1. Introducción a la simulación
 

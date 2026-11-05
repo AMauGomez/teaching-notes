@@ -1,0 +1,161 @@
+---
+title: "2. Análisis exploratorio de datos"
+subtitle: "Inferencia Estadística · Caso: atropellamientos en la CDMX (Unidad 2 del temario)"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, fig.width = 8, fig.height = 4.5)
+source("funciones-caso.R")
+```
+
+Antes de usar cualquier modelo hay que conocer los datos: de dónde vienen, qué errores tienen y si el modelo que pensamos usar tiene sentido. Este capítulo toma tres decisiones que el resto del curso da por hechas: **qué reportes contar, en qué horario y con qué modelo.**
+
+```{r}
+atropellamientos <- leer_atropellamientos()
+tipos <- read_csv("datos/tipos_incidente_cdmx.csv", show_col_types = FALSE)
+```
+
+## 2.1 Tablas de frecuencias
+
+**¿Qué reporta el C5?** Los incidentes más frecuentes, con su porcentaje de confirmación:
+
+```{r}
+tipos |>
+  group_by(incidente_c4) |>
+  summarise(reportes = sum(reportes), confirmados = sum(reportes[codigo_cierre == "A"])) |>
+  mutate(pct_confirmados = round(100 * confirmados / reportes, 1)) |>
+  arrange(desc(reportes)) |> head(8) |> knitr::kable()
+```
+
+**Calidad de los datos.** Por cada atropellamiento confirmado hay más reportes duplicados que confirmados: contar reportes sin filtrar exageraría la frecuencia más del doble.
+
+```{r}
+atropellamientos |>
+  count(codigo_cierre) |>
+  mutate(significado = c(A = "confirmado", D = "duplicado", F = "falso", I = "informativo")[codigo_cierre],
+         porcentaje = round(100 * n / sum(n), 1)) |> knitr::kable()
+```
+
+**¿Dónde?** Atropellamientos confirmados por alcaldía (2022-2023):
+
+```{r}
+confirmados <- atropellamientos |> filter(codigo_cierre == "A", fecha < "2024-01-01")
+confirmados |> count(alcaldia, sort = TRUE) |>
+  mutate(porcentaje = round(100 * n / sum(n), 1), acumulado = cumsum(porcentaje)) |> knitr::kable()
+```
+
+## 2.2 Métodos gráficos
+
+**¿Cuándo?** La frecuencia cambia mucho con la hora y el día:
+
+```{r, fig.height = 4}
+confirmados |>
+  count(dia_semana, hora_num) |>
+  mutate(dia_semana = factor(dia_semana, c(LABORABLES, "Sábado", "Domingo"))) |>
+  ggplot(aes(hora_num, dia_semana, fill = n / 104)) +   # ~104 semanas en dos años
+  geom_tile(colour = "white") +
+  scale_fill_gradient(low = "#e8f0fe", high = "#174ea6", name = "Promedio\npor semana") +
+  scale_x_continuous(breaks = seq(0, 23, 3)) +
+  labs(x = "Hora del día", y = NULL, title = "Atropellamientos confirmados por hora y día de la semana")
+```
+
+Esta gráfica tiene una consecuencia para el modelo. Un proceso de Poisson **homogéneo**, cuyos tiempos entre eventos son exponenciales, supone una tasa constante. A lo largo del día la tasa no es constante, así que no esperamos tiempos exponenciales en el día completo. Dentro de una ventana de pocas horas, la tasa sí es aproximadamente constante. Por eso trabajamos en una ventana fija: **días laborables de 18:00 a 21:00**.
+
+**La serie mensual** varía de un mes a otro, pero sin una tendencia marcada en los dos años; por eso podemos tratarlos como comparables.
+
+```{r, fig.height = 3.8}
+confirmados |> count(mes) |>
+  ggplot(aes(as.Date(paste0(mes, "-01")), n)) + geom_line(colour = "#1a73e8") + geom_point(colour = "#1a73e8") +
+  expand_limits(y = 0) +
+  labs(x = NULL, y = "Atropellamientos confirmados", title = "Atropellamientos confirmados por mes")
+```
+
+## ¿Es razonable el modelo exponencial?
+
+Comparamos los tiempos entre atropellamientos en el **día completo** y en la **ventana de hora pico**:
+
+```{r}
+dia_completo <- tiempos_entre(confirmados)
+ventana      <- tiempos_entre(hora_pico(confirmados))
+
+resumen <- function(x) c(n = length(x), media = mean(x), sd = sd(x), CV = sd(x) / mean(x))
+round(rbind(dia_completo = resumen(dia_completo), hora_pico = resumen(ventana)), 2)
+```
+
+En una exponencial la desviación estándar es igual a la media, así que su **coeficiente de variación es 1**. En la ventana de hora pico el CV es casi exactamente 1; en el día completo es mayor, porque mezclamos horas con tasas distintas.
+
+```{r}
+grafica <- function(x, titulo) {
+  ggplot(data.frame(x), aes(x)) +
+    geom_histogram(aes(y = after_stat(density)), binwidth = 5, boundary = 0, fill = "grey80", colour = "white") +
+    stat_function(fun = dexp, args = list(rate = 1 / mean(x)), colour = "#d93025", linewidth = 1) +
+    coord_cartesian(xlim = c(0, 150)) +
+    labs(x = "Minutos entre atropellamientos", y = "Densidad", title = titulo,
+         subtitle = "Línea roja: exponencial con la misma media")
+}
+grafica(ventana, "Hora pico de días laborables (2022-2023)")
+```
+
+**Gráfica cuantil-cuantil.** Si los datos son exponenciales, los puntos siguen la recta.
+
+```{r, fig.height = 4.2}
+qq <- function(x, etiqueta) {
+  n <- length(x)
+  tibble(teorico = qexp(ppoints(n), rate = 1 / mean(x)), observado = sort(x), datos = etiqueta)
+}
+bind_rows(qq(dia_completo, "Día completo"), qq(ventana, "Hora pico")) |>
+  ggplot(aes(teorico, observado)) + geom_abline(colour = "grey50") +
+  geom_point(alpha = 0.3, size = 0.8, colour = "#1a73e8") + facet_wrap(~ datos, scales = "free") +
+  labs(x = "Cuantiles de la exponencial", y = "Cuantiles observados", title = "Gráficas cuantil-cuantil contra la exponencial")
+```
+
+**Los conteos.** Si los tiempos son exponenciales, el número de atropellamientos por ventana es Poisson, y en una Poisson la media es igual a la varianza:
+
+```{r}
+conteos <- hora_pico(confirmados) |> count(fecha)
+c(media = mean(conteos$n), varianza = var(conteos$n))
+```
+
+## 2.3 Medidas descriptivas: la muestra del curso (marzo de 2023)
+
+```{r}
+x <- muestra_curso(atropellamientos)
+n <- length(x)
+c(n = n, media = mean(x), mediana = median(x), desviacion_estandar = sd(x),
+  CV = sd(x) / mean(x), rango_intercuartilico = IQR(x), minimo = min(x), maximo = max(x))
+quantile(x, c(0.1, 0.25, 0.5, 0.75, 0.9))
+```
+
+La mediana es menor que la media: la distribución es asimétrica a la derecha, como corresponde a una exponencial (cuya mediana es $\mu \ln 2 \approx 0.69\mu$).
+
+## 2.4 Medidas descriptivas para datos agrupados
+
+Si solo tuviéramos una tabla de frecuencias por clases (como a veces se publican los datos), calcularíamos las medidas con las marcas de clase $m_i$ y frecuencias $f_i$:
+
+$$
+\bar x \approx \frac{\sum_i f_i m_i}{n}, \qquad s^2 \approx \frac{\sum_i f_i (m_i - \bar x)^2}{n - 1}.
+$$
+
+```{r}
+clases <- cut(x, breaks = seq(0, 10 * ceiling(max(x) / 10), by = 10), right = FALSE)
+tabla <- as.data.frame(table(clases), responseName = "f") |>
+  mutate(marca = seq(5, by = 10, length.out = n()),
+         f_relativa = round(f / n, 3), f_acumulada = cumsum(f))
+knitr::kable(tabla)
+
+media_agrupada <- sum(tabla$f * tabla$marca) / n
+var_agrupada <- sum(tabla$f * (tabla$marca - media_agrupada)^2) / (n - 1)
+round(rbind(sin_agrupar = c(media = mean(x), sd = sd(x)),
+            agrupados   = c(media = media_agrupada, sd = sqrt(var_agrupada))), 2)
+```
+
+Agrupar pierde información, pero con clases de 10 minutos el error es pequeño.
+
+## Decisiones para el resto del curso
+
+1. Contamos solo **atropellamientos confirmados**: los duplicados inflarían la frecuencia.
+2. Trabajamos en una **ventana con tasa aproximadamente constante**: días laborables de 18:00 a 21:00.
+3. En esa ventana, el **modelo exponencial** para los tiempos (y Poisson para los conteos) es razonable: CV ≈ 1, la gráfica cuantil-cuantil sigue la recta y la media de los conteos es igual a su varianza.
+
+Con el modelo justificado, el capítulo 3 construye el mejor estimador de $\mu$.

@@ -1,6 +1,6 @@
 # Teaching notes · Código de ayudantías
 
-Código en R (y Python) que escribo para mis sesiones como **ayudante (teaching assistant) en la Facultad de Ciencias de la UNAM**. Cada materia sigue el orden de su temario oficial.
+Código en R (y Python) para mis sesiones como **ayudante (teaching assistant) en la Facultad de Ciencias de la UNAM**: el que uso en mis ayudantías y material complementario preparado para cada curso. Cada materia sigue el orden de su temario oficial.
 
 | Materia | Clave | Temas con código |
 |---|---|---|
@@ -12,7 +12,7 @@ Código en R (y Python) que escribo para mis sesiones como **ayudante (teaching 
 
 ## Sobre este material
 
-- Todo el código lo escribí yo para mis ayudantías. No incluye material de los profesores titulares, soluciones de tareas o exámenes, ni datos de alumnos.
+- No incluye material de los profesores titulares, soluciones de tareas o exámenes, ni datos de alumnos.
 - Los temas marcados como *pendiente* en cada materia se irán completando.
 - Los scripts leen sus datos de una carpeta `datos/`; cada materia indica qué bases usa y de dónde provienen.
 

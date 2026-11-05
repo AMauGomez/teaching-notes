@@ -1,6 +1,6 @@
 # Análisis Multivariado
 
-Código de mis ayudantías, ordenado según el temario oficial de la Facultad de Ciencias, UNAM (clave 1815).
+Código de mis ayudantías y material complementario, ordenado según el temario oficial de la Facultad de Ciencias, UNAM (clave 1815).
 
 ## 1. Álgebra de matrices y distribuciones multivariadas
 

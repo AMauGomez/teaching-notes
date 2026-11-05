@@ -1,6 +1,6 @@
 # Modelos de Supervivencia y de Series de Tiempo
 
-Código de mis ayudantías, ordenado según el temario oficial de la Facultad de Ciencias, UNAM.
+Código de mis ayudantías y material complementario, ordenado según el temario oficial de la Facultad de Ciencias, UNAM.
 
 ## 1. Análisis de supervivencia
 
