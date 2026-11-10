@@ -1,88 +1,43 @@
-library(tidyverse)
-library(mice)
-library(lattice)
-library(pan)
-library(ggmice)
-library(readxl)
-library(naniar)
-library(MASS)
-library(psych)
-library(dplyr)
-library(GGally)
-library(overdisp)
-library(AER)
-library(performance)
-library("DHARMa")
-library("glmmTMB")
-library("pscl")
-library("gamlss")
-library(countimp)
-library(caTools)
-library(broom.mixed)
-library(lattice)
-library(readxl)
-library(corrplot)
-library("amap")
+# =============================================================================
+# 3.4 Escalamiento multidimensional clásico (MDS) a partir de una matriz de
+#     distancias
+# Objetivo: representar en el plano 20 marcas a partir de las distancias entre
+#           ellas, y ver cómo cambia el mapa al cambiar la medida de distancia.
+# Datos:    datos/matrixbrands.csv: matriz simétrica 20 x 20 de distancias
+#           entre marcas (diagonal cero).
+# =============================================================================
 
+datos <- read.csv("datos/matrixbrands.csv", check.names = FALSE)
+rownames(datos) <- datos[[1]]
+D <- as.matrix(datos[, -1])
 
-###Cargamos la matriz de distancias
-###El paso más importante es definir la distancia que queremos utilizar##
-datos<-read.csv("datos/matrixbrands.csv")
-##CAMBIAMOS EL FORMATO##
-rownames(datos)<-datos$X
+# Comprobamos que de verdad sea una matriz de distancias
+stopifnot(isSymmetric(unname(D), tol = 1e-6), all(diag(D) == 0))
 
-datos<-datos[,2:21]
+# --- 1. MDS clásico sobre las distancias originales --------------------------
+# cmdscale() doble-centra D^2 y toma los dos primeros vectores propios
+esc_mul <- cmdscale(as.dist(D), k = 2, eig = TRUE)
 
-###Realizamos el escalamiento
-esc_mul<-cmdscale(datos, k = 2)
-esc_mul
+# Bondad de ajuste: proporción de los valores propios que capturan las dos
+# dimensiones (si hay valores propios negativos, D no es euclidiana)
+round(esc_mul$GOF, 3)
+sum(esc_mul$eig < -1e-8)   # número de valores propios negativos
 
+graficar_mds <- function(coords, titulo) {
+  plot(coords, type = "n", xlab = "Coordenada 1", ylab = "Coordenada 2",
+       main = titulo)
+  text(coords, labels = rownames(coords), cex = 0.8)
+  abline(h = 0, v = 0, lty = 3, col = "gray")
+}
+graficar_mds(esc_mul$points, "MDS clásico: distancias originales")
 
-###Graficamos
-
-x11()
-plot(esc_mul[,1], esc_mul[,2],
-     type = "n")
-text(esc_mul[,1], esc_mul[,2],
-     labels = row.names(datos))
-
-
-
-####Con medida canberra
-
-datos_can<-dist(datos, method="canberra")
-datos_can
-
-##Realizamos el escalamiento
-esc_mul_can<-cmdscale(datos_can, k = 2)
-esc_mul_can
-
-###Graficamos
-
-x11()
-plot(esc_mul_can[,1], esc_mul_can[,2])
-text(esc_mul_can[,1], esc_mul_can[,2],
-     labels = row.names(datos))
-
-
-
-####Con medida Manhattan
-
-datos_man<-dist(datos, method="manhattan")
-datos_man
-
-##Realizamos el escalamiento
-esc_mul_man<-cmdscale(datos_man, k = 2)
-esc_mul_man
-
-###Graficamos
-
-x11()
-plot(esc_mul_man[,1], esc_mul_man[,2])
-text(esc_mul_man[,1], esc_mul_man[,2],
-     labels = row.names(datos))
-
-
-
-
-
+# --- 2. Otras distancias -----------------------------------------------------
+# Aquí cada marca se describe por su vector de distancias a las 20 marcas
+# (su "perfil") y medimos qué tan distintos son esos perfiles con Canberra y
+# Manhattan. Es otra pregunta: dos marcas quedan cerca si están a distancias
+# parecidas del resto.
+for (metodo in c("canberra", "manhattan")) {
+  d_perfil <- dist(D, method = metodo)
+  graficar_mds(cmdscale(d_perfil, k = 2),
+               paste("MDS con distancia", metodo, "entre perfiles"))
+}

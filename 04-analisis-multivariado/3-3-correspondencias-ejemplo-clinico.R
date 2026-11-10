@@ -1,14 +1,14 @@
-library(ca)
-library(gplots)
-library(graphics)
-library(FactoMineR)#
-library(factoextra)#
-library(dplyr)
-library(cabootcrs)#tablas contingencia
+# =============================================================================
+# 3.3 Análisis de correspondencias: primer paso con una tabla de contingencia
+# Objetivo: antes de un analisis de correspondencias, comprobar asociación
+#           (ji-cuadrada) y explorar perfiles fila/columna con gráficas.
+# Datos:    tabla ficticia de clase: tipo de cirugía contra el medicamento con
+#           el que los pacientes reportaron mejoría del dolor postoperatorio.
+# =============================================================================
 
+library(gplots)   # balloonplot()
 
-
-#Caragamos la matriz de datos obtenidos a la pregunta a pacientes post hospitalarios sobre con cual
+#Cargamos la matriz de datos obtenidos a la pregunta a pacientes post hospitalarios sobre con cual
 #medicamento sintieron una mejoría en el dolor post operatorio, registrando tambien su tipo de operación.
 
 datos<- matrix(c(35, 42, 80, 52, 
@@ -44,13 +44,11 @@ prop.table(datos, 2)
 ###Graficamente##
 
 
-x11()
 mosaicplot((datos),shade=F)
 
 
 ##Como correlograma##
 
-x11()
 balloonplot(t(datos), main ="Cirugías y Medicamentos",
             label = FALSE, show.margins = FALSE)
 

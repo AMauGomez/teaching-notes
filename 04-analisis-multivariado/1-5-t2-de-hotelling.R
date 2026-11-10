@@ -1,3 +1,18 @@
+# =============================================================================
+# 1.5 Prueba T^2 de Hotelling para el vector de medias y normalidad multivariada
+# Objetivo: probar H0: mu = mu0 para cinco mediciones a mano y con ICSNP,
+#           construir intervalos simultáneos y revisar normalidad multivariada
+#           (Mardia, Henze-Zirkler) con MVN. Incluye curvas de Andrews en ggplot.
+# Datos:    ejemplo numérico de clase (11 sujetos, 5 mediciones de una
+#           proteína), palmerpenguins::penguins y datasets::swiss.
+# =============================================================================
+
+library(ICSNP)           # HotellingsT2()
+library(mvdalab)         # MVcis()
+library(MVN)             # mvn()
+library(ggplot2)
+library(palmerpenguins)
+
 #Se quiere probar que las mediciones de la proteina HLMG13 
 ##Se mantienen en los siguientes rangos usando la dosis adecuada
 
@@ -44,13 +59,11 @@ t2
 
 
 
-###Calculamos el valor del cuantil de la dist F
+### Valor crítico: T2 > (n-1)p/(n-p) * F_{p, n-p}(0.95) rechaza H0
 ((n*p-p)/(n-p))*qf(0.95,p,n-p)
 
 
 
-library(ICSNP)
-library(mvdalab)
 
 
 HotellingsT2(datos_1[,-1],
@@ -66,9 +79,6 @@ MVcis(data = datos_1[,-1], level = 0.95, include.zero = T)
 
 ###Normalidad
 
-library(MVN)
-library(tidyverse)
-library(palmerpenguins)
 
 
 
@@ -163,6 +173,5 @@ andrewsCurves <- function(x, groups = NULL,
 }
 
 
-x11()
 andrewsCurves(swiss_1)
 

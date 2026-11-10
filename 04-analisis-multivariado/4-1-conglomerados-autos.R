@@ -1,225 +1,74 @@
-library(readxl)
-library(dplyr)
-library(ggplot2)
-library(lmtest)
-library(stats)
-library(FactoMineR)
-library(factoextra)
-library(psych)
-library(ggcorrplot)
+# =============================================================================
+# 4.1 Análisis de conglomerados: jerárquicos (DIANA y AGNES) y k-medias
+# Objetivo: agrupar 205 modelos de autos por sus características técnicas,
+#           comparar métodos de enlace y elegir el número de grupos con la
+#           silueta.
+# Datos:    "Car Price Prediction" (Kaggle, CarPrice_Assignment.csv): 205
+#           autos con dimensiones, motor, rendimiento y precio.
+# =============================================================================
+
 library(cluster)
-library(dendextend)
-library(NbClust)
-library(fpc)
-
-datos_1<-read.csv("datos/CarPrice_Assignment.csv")
-datos<-datos_1[,8:20]
-
-
-###Estadística de Hopkings##
-
-get=get_clust_tendency(datos, n=nrow(datos)-1, graph = FALSE)
-get$hopkins_stat
-
-
-
-###DIANA##
-
-dian=diana(datos, metric ="euclidean", stand = TRUE)
-dian$dc
-
-  
-x11()
-fviz_dend(dian, 
-          cex = 0.5,
-          k_colors = c("blue", "red"),
-          color_labels_by_k = TRUE, 
-          rect = TRUE, 
-          main="Dendograma Diana-Euclidiana"
-          )
-            
-##Dendograma coloreado en 4 clusters##          
-
-x11()
-fviz_dend(dian,k=4,
- cex=0.5,
- k_colors=c("blue","red", "yellow", "cyan" ),
- color_labels_by_k=TRUE,
- rect=TRUE,
- main="Dendograma Diana"
- )
-
-
-
-##Cortamos en 4 clusters##
-
-grp = cutree(dian, k = 4)
-x11()
-
-
-##graficamos los clusters##
-fviz_cluster(list(data = datos, cluster = grp))
-
-
-##Observamos las cardinalidades de los grupos#3
-table(grp)
-
-
-###Si cortamos en 6 clusters##
-x11()
-fviz_dend(dian, k=6,
-          cex = 0.5,
-          k_colors = c("blue","red", "violet", "grey", "yellow", "cyan" ),
-          color_labels_by_k = TRUE, 
-          rect = TRUE, 
-          main="Dendrogram of Diana"
-)
-
-
-##graficamos##
-
-grp_1 = cutree(dian, k = 6)
-
-
-x11()
-fviz_cluster(list(data = datos, cluster = grp_1))
-
-
-###Cardinalidad de los clsuters##
-
-table(grp_1)
-
-
-
-###Método Aglomerativo AGNES###
-
-
-#Primero haremos un modelo AGNES con la metrica euclidiana y metodo single 
-#(teoricamente clusters mas grandes), otra con metodo complete 
-#(en teoria clusters mas compactos), y por ultimo uno con Ward 
-#(fusiona clusters muy cercanos).#
-
-
-agnes_single=agnes(datos, metric="euclidean", stand=TRUE, method="single")
-agnes_complete=agnes(datos, metric="euclidean", stand=TRUE, method="complete")
-agnes_ward=agnes(datos, metric="euclidean", stand=TRUE, method="ward")
-
-
-
-### AGNES - Single ###
-
-
-x11()
-fviz_dend(agnes_single, k = 4, 
-          cex = 0.5,
-          k_colors = c("blue", "red"),
-          color_labels_by_k = TRUE, 
-          rect = TRUE, 
-          main="Dendograma Agnes-Single"
-)
-
-
-
-
-
-grp_3 = cutree(agnes_single, k = 4)
-x11()
-fviz_cluster(list(data = datos, cluster = grp_3))
-
-
-
-table(grp_3)
-
-
-##Tendencia a agruparse##
-
-agnes_single$ac
-
-
-
-### AGNES- Complete ###
-
-x11()
-fviz_dend(agnes_complete, k = 4, 
-          cex = 0.5,
-          k_colors = c("blue", "red", "pink", "orange"),
-          color_labels_by_k = TRUE, 
-          rect = TRUE, 
-          main="Dendograma Agnes-Complete"
-)
-
-
-
-grp_4 = cutree(agnes_complete, k = 4)
-
-x11()
-fviz_cluster(list(data = datos, cluster = grp_4))
-
-
-table(grp_4)
-
-agnes_complete$ac
-
-
-### AGNES- Ward ###
-
-fviz_dend(agnes_ward, k = 4, 
-          cex = 0.5,
-          k_colors = c("blue", "red", "pink", "orange"),
-          color_labels_by_k = TRUE, 
-          rect = TRUE, 
-          main="Dendograma Agnes-Ward"
-)
-
-
-
-grp_5 = cutree(agnes_ward, k = 4)
-
-x11()
-fviz_cluster(list(data = datos, cluster = grp_5))
-
-
-table(grp_5)
-
-
-
-agnes_ward$ac
-
-
-
-
-
-##Método K-Means##
-  
-##Hacemos el modelo de k-means, empezaremos haciendo 30 asignaciones iniciales 
-#y con 4 particiones como lo habiamos inferido con los modelos anteriores
-
-
-k_mean=eclust(datos, "kmeans", k = 4, nstart = 30, graph = FALSE)
-
-
-
-x11()
-fviz_cluster(k_mean, data = datos,
-             palette = c("blue", "red", "orange", "green"),
-             ellipse.type = "euclid",
-             star.plot = TRUE, 
-             repel = TRUE, 
-             ggtheme = theme_minimal()
-)
-
-
+library(factoextra)
+
+datos_1 <- read.csv("datos/CarPrice_Assignment.csv")
+
+# Solo variables numéricas técnicas (sin el identificador, sin el riesgo
+# asignado por la aseguradora y sin el precio, que usamos después para describir)
+vars <- c("wheelbase", "carlength", "carwidth", "carheight", "curbweight",
+          "enginesize", "boreratio", "stroke", "compressionratio",
+          "horsepower", "peakrpm", "citympg", "highwaympg")
+datos <- datos_1[, vars]
+rownames(datos) <- make.unique(datos_1$CarName)
+datos_z <- scale(datos)
+
+# --- 1. ¿Hay estructura de grupos? Estadística de Hopkins ---------------------
+# Valores cercanos a 0.5 indican datos sin estructura; cercanos a 1, agrupables
+set.seed(1)
+get_clust_tendency(datos_z, n = 50, graph = FALSE)$hopkins_stat
+
+# --- 2. Jerárquico divisivo: DIANA -------------------------------------------
+dian <- diana(datos_z, metric = "euclidean")
+dian$dc   # coeficiente divisivo
+
+fviz_dend(dian, k = 4, cex = 0.4, color_labels_by_k = TRUE, rect = TRUE,
+          main = "DIANA, distancia euclidiana, 4 grupos")
+grp_diana <- cutree(as.hclust(dian), k = 4)
+table(grp_diana)
+fviz_cluster(list(data = datos_z, cluster = grp_diana), geom = "point",
+             main = "DIANA en los dos primeros componentes")
+
+# --- 3. Jerárquico aglomerativo: AGNES con tres enlaces -----------------------
+# single: encadena y tiende a un grupo enorme más observaciones sueltas
+# complete: grupos más compactos; ward: minimiza la varianza dentro de grupos
+enlaces <- c("single", "complete", "ward")
+agnes_mod <- lapply(setNames(enlaces, enlaces),
+                    function(m) agnes(datos_z, metric = "euclidean", method = m))
+
+sapply(agnes_mod, function(a) round(a$ac, 3))                   # coeficiente aglomerativo
+sapply(agnes_mod, function(a) table(cutree(as.hclust(a), k = 4)))  # tamaños con k = 4
+
+for (m in enlaces) {
+  print(fviz_dend(agnes_mod[[m]], k = 4, cex = 0.4, color_labels_by_k = TRUE,
+                  rect = TRUE, main = paste("AGNES, enlace", m)))
+}
+
+# --- 4. k-medias -------------------------------------------------------------
+# Número de grupos por silueta promedio
+fviz_nbclust(datos_z, kmeans, method = "silhouette", nstart = 30)
+
+set.seed(2023)
+k_mean <- eclust(datos_z, "kmeans", k = 4, nstart = 30, graph = FALSE)
 k_mean$size
-
-
-
-
-###Validación
-
+fviz_cluster(k_mean, geom = "point", ellipse.type = "euclid",
+             ggtheme = theme_minimal())
 fviz_silhouette(k_mean, palette = "jco")
 
+# --- 5. Interpretación: perfil de cada grupo ---------------------------------
+# Medias de algunas variables y del precio (que no entró al agrupamiento)
+perfil <- aggregate(cbind(datos[, c("enginesize", "horsepower", "curbweight", "citympg")],
+                          price = datos_1$price),
+                    by = list(grupo = k_mean$cluster), FUN = mean)
+round(perfil)
 
-##Optimo de clsuters##
-
-x11()
-fviz_nbclust(datos, kmeans, method='silhouette')
+# Concordancia entre Ward y k-medias
+table(Ward = cutree(as.hclust(agnes_mod$ward), k = 4), kmedias = k_mean$cluster)

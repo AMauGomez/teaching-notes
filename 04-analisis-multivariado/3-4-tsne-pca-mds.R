@@ -1,267 +1,104 @@
-library(tidyverse)
-library(mice)
-library(lattice)
-library(pan)
-library(ggmice)
-library(readxl)
-library(naniar)
-library(MASS)
-library(psych)
-library(dplyr)
-library(GGally)
-library(overdisp)
-library(AER)
-library(performance)
-library("DHARMa")
-library("glmmTMB")
-library("pscl")
-library("gamlss")
-library(countimp)
-library(caTools)
-library(broom.mixed)
-library(lattice)
-library(readxl)
-library(corrplot)
-library("amap")
-library(readxl)
+# =============================================================================
+# 3.4 Comparación de técnicas de reducción de dimensión: PCA, MDS,
+#     correspondencias múltiples (MCA) y t-SNE sobre los mismos datos
+# Objetivo: ver qué conserva cada técnica. PCA y MDS clásico con distancia
+#           euclidiana dan el mismo mapa (salvo signo); MCA trabaja con
+#           variables categóricas; t-SNE conserva vecindades locales y sirve
+#           para visualizar, no para medir distancias entre grupos.
+# Datos:    "Niveles de Obesidad" (Kaggle Playground Series S4E2).
+#           Archivo esperado: datos/Niveles de Obesidad.csv
+# =============================================================================
+
 library(dplyr)
 library(ggplot2)
-library(lmtest)
-library(stats)
 library(FactoMineR)
 library(factoextra)
-library(psych)
-library(ggcorrplot)
-library(ggplot2)
-library(GGally)
-library(GPArotation)
-library(qgraph)
-library(corrplot)
-library(cabootcrs)
 library(Rtsne)
 
+datos_1 <- read.csv("datos/Niveles de Obesidad.csv") |> na.omit()
 
-datos_1<-read.csv("datos/Niveles de Obesidad.csv")
+# Muestra aleatoria de 500 personas (las primeras filas no son representativas
+# y t-SNE es costoso con miles de puntos)
+set.seed(2023)
+datos_1 <- datos_1[sample(nrow(datos_1), 500), ]
+nivel <- factor(datos_1$NObeyesdad)
 
-###Tratamiento de los datos##
+# Matriz numérica: continuas + binarias codificadas 0/1 (sin id ni la etiqueta)
+si_no <- function(x) as.integer(x == "yes")
+datos <- datos_1 |>
+  transmute(Hombre = as.integer(Gender == "Male"), Age, Height, Weight,
+            Historia_familiar = si_no(family_history_with_overweight),
+            FAVC = si_no(FAVC), FCVC, NCP, SMOKE = si_no(SMOKE), CH2O,
+            SCC = si_no(SCC), FAF, TUE)
 
-datos_1$Gender<-if_else(datos_1$Gender=="Male",1,0)
-datos_1$family_history_with_overweight<-if_else(datos_1$family_history_with_overweight=="yes",1,0)
-datos_1$FAVC<-if_else(datos_1$FAVC=="yes",1,0)
-datos_1$SMOKE<-if_else(datos_1$SMOKE=="yes",1,0)
-datos_1$SCC<-if_else(datos_1$SCC=="yes",1,0)
-
-datos<-datos_1[1:200,1:13 ]
-
-##PCA##
-
-PCA_centrado=prcomp(datos, center=TRUE, scale=TRUE)
-PCA_centrado
-
-##Revisamos la proporción de varianza explicada por cada componente
+# --- 1. Componentes principales ----------------------------------------------
+PCA_centrado <- prcomp(datos, center = TRUE, scale. = TRUE)
 summary(PCA_centrado)
 
+fviz_screeplot(PCA_centrado, addlabels = TRUE, main = "PCA centrado y reescalado")
+fviz_pca_var(PCA_centrado, col.var = "contrib",
+             gradient.cols = c("green", "blue"), repel = TRUE)
+fviz_pca_ind(PCA_centrado, geom = "point", habillage = nivel, addEllipses = FALSE,
+             title = "Individuos en los dos primeros componentes")
+fviz_pca_biplot(PCA_centrado, geom.ind = "point", col.ind = "gray60",
+                col.var = "blue", repel = TRUE)
 
-##Creamos el digrama de codo
-fviz_screeplot(PCA_centrado, main="PCA centrado y reescalado",  addlabels = TRUE)
+# --- 2. MDS clásico con tres distancias --------------------------------------
+z <- scale(datos)
+graficar_mds <- function(d, titulo) {
+  m <- cmdscale(d, k = 2)
+  plot(m, col = nivel, pch = 19, cex = 0.6, xlab = "Coordenada 1",
+       ylab = "Coordenada 2", main = titulo)
+  invisible(m)
+}
+m_eucl <- graficar_mds(dist(z), "MDS euclidiano (variables estandarizadas)")
 
-##Visualizamos la dirección de las variables
-x11()
-fviz_pca_var(PCA_centrado,col.var="contrib",
-             gradient.cols = c("green", "blue"),
-             repel = TRUE)
+# Con distancia euclidiana sobre datos estandarizados, MDS reproduce el PCA:
+# las correlaciones absolutas entre coordenadas deben ser 1
+round(abs(diag(cor(m_eucl, PCA_centrado$x[, 1:2]))), 4)
 
+graficar_mds(dist(z, method = "manhattan"), "MDS con distancia Manhattan")
+graficar_mds(dist(datos, method = "canberra"), "MDS con distancia Canberra")
 
-#visulaizamos las observaciones en los componentes
+# --- 3. Análisis de correspondencias múltiples --------------------------------
+# Discretizamos las continuas para trabajar solo con variables categóricas
+cat_df <- datos_1 |>
+  mutate(Height = Height * 100) |>
+  transmute(
+    Gender, family_history_with_overweight, FAVC, CAEC, SMOKE, SCC, CALC, MTRANS,
+    Edad = cut(Age, c(0, 18, 30, 40, 50, 100),
+               labels = c("<=18", "19-30", "31-40", "41-50", "50+"), include.lowest = TRUE),
+    Estatura = cut(Height, c(0, 160, 170, 180, 250),
+                   labels = c("<160", "160-170", "170-180", "180+"), include.lowest = TRUE),
+    Peso = cut(Weight, c(0, 60, 80, 100, 120, 200),
+               labels = c("<60", "60-80", "80-100", "100-120", "120+"), include.lowest = TRUE),
+    Verduras = cut(FCVC, c(0, 1.5, 2.5, 3), labels = c("Bajo", "Medio", "Alto"), include.lowest = TRUE),
+    Agua = cut(CH2O, c(0, 1.5, 2.5, 3), labels = c("Bajo", "Medio", "Alto"), include.lowest = TRUE),
+    Actividad = cut(FAF, c(0, 0.5, 1.5, 3), labels = c("Bajo", "Medio", "Alto"), include.lowest = TRUE)
+  ) |>
+  mutate(across(everything(), as.factor))
 
-x11()
-fviz_pca_ind(PCA_centrado, col.ind = "cos2", 
-             gradient.cols = c("gray", "purple", "red"),
-             repel = TRUE)
-
-
-##Visualizamods los datos y la direccion de las variables
-x11()
-fviz_pca_biplot(PCA_centrado, repel = TRUE,
-                col.var = "blue", 
-                col.ind = "green")
-
-
-###Con MDS##
-
-
-###Creamos la matriz a trabajar
-###El paso más importante es definir la distancia que queremos utilizar##
-
-###Realizamos el escalamiento
-esc_mul<-cmdscale(dist(datos), k = 2)
-esc_mul
-
-
-###Graficamos
-
-x11()
-plot(esc_mul[,1], esc_mul[,2],
-     type = "n")
-text(esc_mul[,1], esc_mul[,2],
-     labels = row.names(datos))
-
-
-
-####Con medida canberra
-
-datos_can<-dist(datos, method="canberra")
-datos_can
-
-##Realizamos el escalamiento
-esc_mul_can<-cmdscale(datos_can, k = 2)
-esc_mul_can
-
-###Graficamos
-
-x11()
-plot(esc_mul_can[,1], esc_mul_can[,2])
-text(esc_mul_can[,1], esc_mul_can[,2],
-     labels = row.names(datos))
-
-
-
-####Con medida Manhattan
-
-datos_man<-dist(datos, method="manhattan")
-datos_man
-
-##Realizamos el escalamiento
-esc_mul_man<-cmdscale(datos_man, k = 2)
-esc_mul_man
-
-###Graficamos
-
-x11()
-plot(esc_mul_man[,1], esc_mul_man[,2])
-text(esc_mul_man[,1], esc_mul_man[,2],
-     labels = row.names(datos))
-
-
-
-
-####Analisis de Correspondencias###
-
-
-datos<-read.csv("datos/Niveles de Obesidad.csv")
-datos<-datos[1:200,]
-datos<-datos%>%mutate(datos, Height=Height*100)
-datos<-na.omit(datos)
-
-
-##Creamos los cortes o discretización de los datos###
-
-datos$Age_fac <- cut(datos$Age,
-                     breaks = c(0, 18, 30, 40, 50, 60, 100),
-                     labels = c('0-18', '19-30', '31-40', '41-50', '51-60', '60+'),
-                     include.lowest = TRUE)
-
-datos$Height_fac<- cut(datos$Height,
-                       breaks = c(145, 160, 170, 180, 190, 200), 
-                       labels = c("145-160", "160-170", "170-180", "180-190", "190-200"),
-                       include.lowest = TRUE)
-
-datos$Weight_fac <- cut(datos$Weight,
-                        breaks = c(39, 60, 80, 100, 120, 166),
-                        labels = c("39-60", "60-80", "80-100", "100-120", "120-166"),
-                        include.lowest = TRUE)
-
-# Creamos 3 niveles: bajo, medio y alto de la frecuencia en consumo de vegetales
-datos$FCVC_fac <- cut(datos$FCVC,
-                      breaks = c(0, 1, 2, 3), 
-                      labels = c('Bajo', 'Medio', 'Alto'),
-                      include.lowest = TRUE)
-
-datos$NCP_fac <- cut(datos$NCP,
-                     breaks = c(0, 1, 3, 4),
-                     labels = c('Bajo', 'Medio', 'Alto'),
-                     include.lowest = TRUE)
-
-# Creamos 3 niveles: bajo, medio y alto de cosnumo de agua
-datos$CH2O_fac <- cut(datos$CH2O,
-                      breaks = c(0, 1.5, 2.5, 3), 
-                      labels = c('Bajo', 'Medio', 'Alto'),
-                      include.lowest = TRUE)
-
-# Creamos 3 niveles: bajo, medio y alto de la frecuencia con la que hacen actividad física.
-datos$FAF_fac <- cut(datos$FAF,
-                     breaks = c(0, 0.5, 1.5, 3), 
-                     labels = c('Low', 'Medium', 'High'),
-                     include.lowest = TRUE)
-# Creamos 3 niveles: bajo, medio y alto del tiempo promedio de uso de aparatos moviles 
-datos$TUE_fac <- cut(datos$TUE,
-                     breaks = c(0, 0.5, 1.5, 2), 
-                     labels = c('Low', 'Medium', 'High'),
-                     include.lowest = TRUE)
-
-###Seleccionamos varaibles para el modelo##
-
-datos_0<-datos[,1:5]
-datos_10<-datos[,14:25]
-
-datos_modelo <-cbind(datos_0, datos_10)
-
-
-matriz_cont<-getBurt(datos_modelo)
-head(matriz_cont)
-
-
-###Creamos el analisis de correspondencias
-
-modelo_MCA<-MCA(datos_modelo, ncp=5, graph = FALSE)
-
-
-
-x11()
-scree_plot<-fviz_screeplot(modelo_MCA, addlabels = TRUE, ylim = c(0, 20))
-scree_plot
-
-
-
-
-x11()
+modelo_MCA <- MCA(cat_df, ncp = 5, graph = FALSE)
+fviz_screeplot(modelo_MCA, addlabels = TRUE)
 fviz_mca_var(modelo_MCA, col.var = "cos2",
-             gradient.cols = c("green", "orange", "purple", "red"), 
-             repel = TRUE, 
+             gradient.cols = c("green", "orange", "red"), repel = TRUE,
+             ggtheme = theme_minimal())
+fviz_mca_ind(modelo_MCA, geom = "point", habillage = nivel,
              ggtheme = theme_minimal())
 
-
-x11()
-fviz_mca_ind(modelo_MCA, col.ind = "cos2", 
-             gradient.cols = c("green", "orange", "purple", "red"),
-             repel = FALSE, 
-             ggtheme = theme_minimal())
-
-###T-SNE
-
-###Es un proceso esticastico por lo que hay que usar semillas#
-###Su principal uso no es la clusterización, sino la visualización de datos##
-
-tsne = Rtsne(datos, perplexity=30, eta=800, theta=.5, max_iter=3000)
-
-###Graficamos 
-tsne= datos%>%
-  bind_cols(x=tsne$Y[,1],y=tsne$Y[,2])
-
-ggplot(data=tsne, aes(x=x,y=y,col=as.factor(NObeyesdad)))+
-  geom_point()+
-  theme_minimal()+
-  labs(x='',y='',color = "Tipo de Obesidad")
-
-
-tsne_1 = Rtsne(datos, perplexity=30, eta=800, theta=.5, max_iter=3000)
-
-###Graficamos 
-tsne_1= datos%>%
-  bind_cols(x=tsne_1$Y[,1],y=tsne_1$Y[,2])
-
-ggplot(data=tsne_1, aes(x=x,y=y,col=as.factor(NObeyesdad)))+
-  geom_point()+
-  theme_minimal()+
-  labs(x='',y='',color = "Tipo de Obesidad")
-
+# --- 4. t-SNE ----------------------------------------------------------------
+# Es estocástico: fijamos la semilla. Lo corremos con dos perplejidades para ver
+# que la forma del mapa depende de ese parámetro. Las distancias entre grupos
+# lejanos en un mapa t-SNE no se interpretan.
+tsne_mapa <- function(perplejidad) {
+  set.seed(42)
+  ts <- Rtsne(z, perplexity = perplejidad, theta = 0.5, max_iter = 1500,
+              check_duplicates = FALSE)
+  ggplot(data.frame(x = ts$Y[, 1], y = ts$Y[, 2], nivel), aes(x, y, color = nivel)) +
+    geom_point(size = 1.5) +
+    theme_minimal() +
+    labs(x = "", y = "", color = "Nivel de obesidad",
+         title = paste("t-SNE, perplejidad =", perplejidad))
+}
+tsne_mapa(10)
+tsne_mapa(40)

@@ -42,8 +42,11 @@ Código de mis ayudantías y material complementario, ordenado según el temario
 
 ## Datos
 
-Los scripts leen sus datos desde una carpeta `datos/`. Las bases de terceros no se incluyen en el repositorio; se descargan buscándolas por su nombre:
+Cada script indica en su encabezado el tema, el objetivo y la fuente de sus datos. Los scripts leen desde una carpeta `datos/`; las bases de terceros no se incluyen en el repositorio y se descargan buscándolas por su nombre:
 
 - `ile_2019_2021.csv`: Interrupción legal del embarazo, Portal de Datos Abiertos de la CDMX
-- `SP500.txt`: se descarga desde la URL indicada en el código
-- `CarPrice_Assignment.csv`, `Medidas_Corporales.csv`, `Niveles de Obesidad.csv`, `StressLevelDataset.csv`, `Wholesale customers data.csv`, `geopol.csv`, `matrixbrands.csv`, `survey lung cancer.csv` y otras: bases públicas de Kaggle
+- `Wholesale customers data.csv`: UCI Machine Learning Repository
+- `CarPrice_Assignment.csv`, `Medidas_Corporales.csv`, `Niveles de Obesidad.csv`, `StressLevelDataset.csv`, `geopol.csv`, `matrixbrands.csv`, `survey lung cancer.csv` y otras: bases públicas de Kaggle
+- El discriminante usa `Smarket` del paquete `ISLR2`, y la T² de Hotelling usa `palmerpenguins` y `swiss`; no requieren descarga.
+
+Todos los scripts se corrieron completos en R 4.5 (noviembre de 2026).
