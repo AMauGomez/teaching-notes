@@ -1,0 +1,43 @@
+---
+title: "Teaching"
+subtitle: "Teaching assistant at the Faculty of Sciences, UNAM (Aug 2023 – present): 13 course sections across 6 subjects of the statistics track"
+author: "Aaron Mauricio Gómez Jiménez"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 2
+---
+
+I lead the twice-weekly lab and problem sessions that accompany the professor's lectures: I work through the theory with students, write the R code for each topic, and build case studies on real data so the methods are learned on questions that matter. Since 2023 I have assisted in **13 course sections** with about **360 enrolled students**.
+
+## Courses
+
+| Subject (UNAM name) | Sections | What the course covers | Material |
+|---|---|---|---|
+| **Probability II** (*Probabilidad II*) | 1 | Joint distributions, transformations of random vectors, conditional expectation, generating functions, limit theorems | — |
+| **Statistical Inference** (*Inferencia Estadística*) | 3 | Sampling distributions, point estimation and maximum likelihood, confidence intervals, hypothesis testing | [Case study: pedestrian crashes in Mexico City](https://amaugomez.github.io/cdmx-pedestrian-crashes/) · [code](https://github.com/AMauGomez/teaching-notes/tree/main/01-inferencia-estadistica) |
+| **Nonparametric and Regression Models** (*Modelos No Paramétricos y de Regresión*) | 3 | Rank and goodness-of-fit tests, contingency tables, simple and multiple linear regression, diagnostics, model selection, ANOVA and ANCOVA | [Case study: mortgage pricing](https://amaugomez.github.io/mortgage-pricing-regression/) · [code](https://github.com/AMauGomez/teaching-notes/tree/main/02-modelos-no-parametricos-y-de-regresion) |
+| **Multivariate Analysis** (*Análisis Multivariado*) | 3 | Multivariate normal and Hotelling's T², principal components, factor analysis, correspondence analysis, multidimensional scaling, clustering, discriminant analysis; complementary SVM and k-NN | [code](https://github.com/AMauGomez/teaching-notes/tree/main/04-analisis-multivariado) |
+| **Survival and Time Series Models** (*Modelos de Supervivencia y de Series de Tiempo*) | 2 | Censoring, Kaplan–Meier, log-rank, parametric and Cox models; stationarity, smoothing, ARIMA and forecasting | [code](https://github.com/AMauGomez/teaching-notes/tree/main/03-modelos-de-supervivencia-y-series-de-tiempo) · applied in [mortgage credit risk](https://amaugomez.github.io/mortgage-credit-risk/) |
+| **Stochastic Simulation** (*Simulación Estocástica*) | 1 | Random variate generation, Monte Carlo integration and variance reduction, MCMC, EM, bootstrap | [code](https://github.com/AMauGomez/teaching-notes/tree/main/05-simulacion-estocastica) · applied in [mortgage credit risk](https://amaugomez.github.io/mortgage-credit-risk/) |
+
+## By semester
+
+| Semester | Courses |
+|---|---|
+| 2024-1 (Aug–Dec 2023) | Statistical Inference · Probability II |
+| 2024-2 (Jan–May 2024) | Statistical Inference |
+| 2025-1 (Aug–Dec 2024) | Multivariate Analysis · Nonparametric and Regression Models |
+| 2025-2 (Jan–May 2025) | Multivariate Analysis · Nonparametric and Regression Models |
+| 2026-1 (Aug–Dec 2025) | Survival and Time Series Models (two sections) |
+| 2026-2 (Jan–May 2026) | Multivariate Analysis · Nonparametric and Regression Models |
+| 2027-1 (Aug–Dec 2026) | Statistical Inference · Stochastic Simulation |
+
+## How I teach
+
+- **One real question per course.** Inference is taught around a single claim tested end to end ([is someone hit by a car every 30 minutes?](https://amaugomez.github.io/cdmx-pedestrian-crashes/)); regression around [whether mortgage brokers charge more](https://amaugomez.github.io/mortgage-pricing-regression/).
+- **Check the assumptions before the conclusion.** Every method comes with its diagnostics and with an example where ignoring them gives the wrong answer.
+- **Code anyone can rerun.** All material is in R, organised by the official syllabus, in the [teaching-notes repository](https://github.com/AMauGomez/teaching-notes).
+
+[GitHub](https://github.com/AMauGomez) · [LinkedIn](https://www.linkedin.com/in/amaugomezjimenez)

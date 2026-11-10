@@ -4,3 +4,9 @@
 *.html
 # datos de terceros: no se suben
 */datos/*
+
+# página de GitHub Pages
+!docs/
+!docs/**
+
+/.quarto/

@@ -1,5 +1,7 @@
 # Teaching notes · Código de ayudantías
 
+**Página con todos los cursos:** https://amaugomez.github.io/teaching-notes/
+
 Código en R (y Python) para mis sesiones como **ayudante (teaching assistant) en la Facultad de Ciencias de la UNAM**: el que uso en mis ayudantías y material complementario preparado para cada curso. Cada materia sigue el orden de su temario oficial.
 
 | Materia | Clave | Temas con código |
