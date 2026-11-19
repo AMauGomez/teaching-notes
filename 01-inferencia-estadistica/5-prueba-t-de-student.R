@@ -4,7 +4,7 @@ library(readxl)
 library(GGally)
 library(ggplot2)
 #Cargamos los datos
-datos<-read_xlsx("datos/wine.xlsx")
+datos<-read_xlsx("datos/wine_clase1_dividida.xlsx")
 datos$Class<-factor(datos$Class)
 str(datos)
 #Creamos subconjuntos dependiendo del vinedo de procedencia
@@ -27,7 +27,6 @@ vinedo_3<-subset(datos, datos$Class==3)
 variables<-colnames(vinedo_1)
 variables_1<-variables[c(2,4,6,10,14)]
 variables_1
-x11()
 ggpairs(vinedo_1,columns=variables_1,aes(color=Class,alpha=0.5),
         upper= list(continuous= wrap("cor",size=2.5)))
 

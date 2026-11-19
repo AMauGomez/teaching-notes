@@ -1,150 +1,92 @@
 ---
-title: "K-S test"
-author: "Gómez Jiménez Aaron Mauricio"
-date: "2024-09-08"
-output: pdf_document
+title: "1.3 Bondad de ajuste: prueba de Kolmogorov-Smirnov"
+author: "Aaron Mauricio Gómez Jiménez"
+output: html_document
 ---
 
-```{r}
-library(tidyverse)
-library(goftest)
-library(nortest)
+```{r, message = FALSE}
+library(ggplot2)
+library(goftest)   # cvm.test(), ad.test()
+set.seed(2024)
 ```
 
-###KS TEST###
+**Tema del temario:** 1.3 Pruebas de bondad de ajuste (Kolmogorov-Smirnov, Cramér-von Mises, Anderson-Darling).
 
+**Idea.** La estadística $D = \sup_x |F_n(x) - F_0(x)|$ mide la mayor distancia vertical entre la función de distribución empírica de los datos y la teórica.
 
-Generamos una muestra
+## La estadística $D$ a mano
 
-```{r}
-n <- 50      
-data <- rnorm(n, mean = 0, sd = 1) 
-```
-
-Ordenamos los datos de menor a mayor
-```{r}
-data_sorted <- sort(data)
-```
-
-
-CDF teoricos
+Generamos una muestra de una normal estándar y ordenamos los datos.
 
 ```{r}
-theo_cdf <- function(x) { pnorm(x, mean = 0, sd = 1) }
+n <- 50
+datos <- sort(rnorm(n, mean = 0, sd = 1))
+F0 <- function(x) pnorm(x, mean = 0, sd = 1)
 ```
 
-ECDF empirico  (los datos)
-```{r}
-emp_cdf <- ecdf(faithful$eruptions)
-```
-
-Calculamos D
+En cada dato ordenado $x_{(i)}$, la empírica salta de $(i-1)/n$ a $i/n$; la distancia máxima ocurre en alguno de esos dos valores.
 
 ```{r}
-ks_D <- numeric(n)
-for (i in 1:n) {
-
-d1 <- abs((i / n) - theo_cdf(data_sorted[i]))
-d2 <- abs(((i - 1) / n) - theo_cdf(data_sorted[i]))
-  
-  ks_D[i] <- max(d1, d2)
-}
+d_mas <- (1:n) / n - F0(datos)
+d_menos <- F0(datos) - (0:(n - 1)) / n
+D <- max(d_mas, d_menos)
+D
+i_max <- which.max(pmax(d_mas, d_menos))
 ```
-  
 
-Buscamos la distancia maxima
+Coincide con la que calcula `ks.test()`:
 
 ```{r}
-estadistica_D <- max(ks_D)
+ks.test(datos, "pnorm", mean = 0, sd = 1)
 ```
 
-Visualizacion
+## Visualización
 
 ```{r}
-plot(emp_cdf, main = "Kolmogorov-Smirnov ", 
-     xlab = "x", ylab = "Probabilidad acumulada (Fn vs F)",
-     xlim = c(-3, 3), verticals = TRUE, do.points = FALSE, lwd = 2)
+plot(ecdf(datos), main = "Kolmogorov-Smirnov: empírica contra teórica",
+     xlab = "x", ylab = "Probabilidad acumulada", verticals = TRUE, do.points = FALSE, lwd = 2)
+curve(F0, from = -3, to = 3, add = TRUE, col = "blue", lwd = 2, lty = 2)
+x_max <- datos[i_max]
+y_emp <- if (d_mas[i_max] >= d_menos[i_max]) i_max / n else (i_max - 1) / n
+segments(x_max, F0(x_max), x_max, y_emp, col = "red", lwd = 3)
+legend("topleft", c("Empírica", "Normal estándar", "D"), col = c("black", "blue", "red"),
+       lty = c(1, 2, 1), lwd = c(2, 2, 3), bty = "n")
 ```
 
+## Cuidado: la distribución debe estar totalmente especificada
 
-# Overlay Theoretical CDF
+Si la media y la varianza se estiman con los mismos datos, el valor $p$ de Kolmogorov-Smirnov es demasiado grande; para eso existe la corrección de Lilliefors (siguiente script). Aquí la normal estándar está fija de antemano, así que la prueba es válida.
 
-```{r}
-curve(theo_cdf, from = -3, to = 3, add = TRUE, col = "blue", lwd = 2, lty = 2)
-segments(x0 = x_at_max, y0 = y_theo, 
-         x1 = x_at_max, y1 = y_emp_plot, 
-         col = "red", lwd = 3)
+## Dos muestras: tiempos de erupción del géiser Old Faithful
 
-```
-
-```{r}
-ks.test(data, "pois", mean=0, sd=1)
-```
-
-
-
-Cragamos los datos faithful
+¿Las erupciones duran lo mismo cuando la espera previa fue corta que cuando fue larga?
 
 ```{r}
 data(faithful)
-datos<-faithful
-```
-
-
-Tenemos que comparar dos distribuciones empiricas
-
-```{r}
-ecdf_1=ecdf(datos$waiting)
-ecdf_1
+corta <- faithful$eruptions[faithful$waiting < 70]
+larga <- faithful$eruptions[faithful$waiting >= 70]
+ks.test(corta, larga)
 ```
 
 ```{r}
-ggplot(datos, aes(waiting)) + stat_ecdf(geom = "step")
+ggplot(transform(faithful, espera = ifelse(waiting < 70, "Espera < 70 min", "Espera >= 70 min")),
+       aes(eruptions, colour = espera)) +
+  stat_ecdf(geom = "step") +
+  labs(x = "Duración de la erupción (min)", y = "Distribución empírica", colour = NULL) +
+  theme_minimal()
 ```
 
-```{r}
-ecdf_2=ecdf(datos$eruptions)
-ecdf_2
-```
+Las dos empíricas casi no se traslapan: las distribuciones son claramente distintas.
+
+## Otras estadísticas: Cramér-von Mises y Anderson-Darling
+
+Con una muestra pequeña de una $N(1, 4^2)$, probamos contra la normal estándar (que es falsa):
 
 ```{r}
-ggplot(datos, aes(eruptions)) + stat_ecdf(geom = "step")
-```
-
-
-```{r}
-ks.test(datos$eruptions, datos$waiting  , alternative = "two.sided")
-```
-
-Haremos una revisión visual de la función de densidad de los datos
-
-```{r}
-ggplot(datos, aes(x=waiting )) + geom_density(color="blue", fill="cyan")
-```
-
-Creamos datos aleatorios de una distribución
-
-```{r}
-simu<- rnorm(15, 1,4)
-simu
-```
-
-
-```{r}
+simu <- rnorm(15, mean = 1, sd = 4)
 ks.test(simu, "pnorm")
+goftest::cvm.test(simu, "pnorm")
+goftest::ad.test(simu, "pnorm")
 ```
 
-
-#####Cramer Von misses
-
-
-```{r}
-cvm.test(simu)
-```
-
-```{r}
-ad.test(simu)
-```
-
-
-
+Cramér-von Mises integra toda la diferencia entre las distribuciones; Anderson-Darling le da más peso a las colas.

@@ -11,18 +11,12 @@ library(tidyverse)
 data("Nile")
 
 datos<-Nile
-
-x11()
 ggtsdisplay(datos)
 
 ##ACF
-x11()
-
 ggAcf(datos, lag=101)
 
 ##PACF
-
-x11()
 ggPacf(datos, lag=101)
 
 
@@ -50,12 +44,9 @@ checkresiduals(fit_RN)
 
 fit_RN_1 <- arima(datos, order = c(1,0,1))
 summary(fit_RN_1)
-x11()
 checkresiduals(fit_RN_1)
 
 ###Graficamos para ver si nuestra serie se parece
-
-x11()
 autoplot(datos, series = "Serie original") +
   autolayer(fitted(fit_RN), series = "ARIMA ajustado", linetype = "dashed", color = "red") +
   autolayer(fitted(fit_RN_1), series = "ARIMA ajustado", linetype = "dashed", color = "blue") +
@@ -70,24 +61,17 @@ autoplot(datos, series = "Serie original") +
 data("LakeHuron")
 
 datos<-LakeHuron
-
-x11()
 plot(datos, main = "Lake Huron Water Levels", col = "darkblue")
 
 ###
-x11()
 ggtsdisplay(datos)
 
 
 
 ##ACF
-x11()
-
 ggAcf(datos, lag=101)
 
 ##PACF
-
-x11()
 ggPacf(datos, lag=101)
 
 
@@ -100,8 +84,6 @@ adf.test(datos)
 
 ###
 datos_dif<-diff(datos)
-
-x11()
 ggtsdisplay(datos_dif)
 
 
@@ -115,8 +97,6 @@ checkresiduals(fit_LH)
 
 
 ###Graficamos para ver si nuestra serie se parece
-
-x11()
 autoplot(datos_dif, series = "Serie original") +
   autolayer(fitted(fit_LH), series = "ARIMA ajustado", linetype = "dashed", color = "red") +
   ggtitle("Serie original vs. Serie Ajustada ARIMA") +
@@ -139,19 +119,14 @@ plot(JohnsonJohnson, main = "Johnson & Johnson", col = "purple")
 
 
 ###
-x11()
 ggtsdisplay(datos)
 
 
 
 ##ACF
-x11()
-
 ggAcf(datos, lag=101)
 
 ##PACF
-
-x11()
 ggPacf(datos, lag=101)
 
 
@@ -166,21 +141,12 @@ adf.test(datos)
 
 
 adf.test(log(datos))
-
-
-
-x11()
 ggtsdisplay(log(datos))
-
-
-x11()
 plot(decompose(log(datos)))
 
 datos_dif_2<-diff(datos, lag = 2)
 
 adf.test(datos_dif_2)
-
-x11()
 ggtsdisplay(datos_dif_2)
 
 checkresiduals(datos_dif_2)
@@ -200,8 +166,6 @@ summary(fit_JJ_1)
 checkresiduals(fit_JJ_1)
 
 ###Graficamos para ver si nuestra serie se parece
-
-x11()
 autoplot(log(datos), series = "Serie original") +
   autolayer(fitted(fit_JJ_1), series = "ARIMA ajustado", linetype = "dashed", color = "blue")+
   autolayer(fitted(fit_JJ), series = "ARIMA ajustado", linetype = "dashed", color = "red") +

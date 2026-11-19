@@ -19,11 +19,9 @@ library(tidyverse)
 arima_AR_3<-arima.sim(list(order = c(3, 0, 0),ar = c(.93, -0.75, .48)),n = 200)
 
 ##ACF
-x11()
 autoplot(ggAcf(arima_AR_3, lag.max = 100))
 
 #PACF
-x11()
 autoplot(ggPacf(arima_AR_3, lag.max = 50))
 
 
@@ -35,14 +33,12 @@ arima_MA_4<-arima.sim(list(order = c(0, 0, 4), ma = c(.23, -0.35, .12, -.81)),n 
 
 ##ACF corta en el lag q y ya no se sale ninguno (caso perfecto)
 ##ACF
-x11()
 autoplot(ggAcf(arima_MA_4, lag.max = 50))
 
 
 ##PACF decaemiento exponencial o se ve como sen(x)
 
 #PACF
-x11()
 autoplot(ggPacf(arima_MA_4, lag.max = 50))
 
 
@@ -53,19 +49,14 @@ autoplot(ggPacf(arima_MA_4, lag.max = 50))
 
 arima_2_3<-arima.sim(list(order = c(2, 0, 3), ar= c(.54, -.57), ma = c(.86, -0.45, -.67)),n = 200)
 
-mod_0<-Arima(datos, c(3,0,6))
 
 ##ACF decaemiento exponencial o se ve como sen(x)
 ## despues del lag q-p
-
-x11()
 autoplot(ggAcf(arima_2_3, lag.max = 50))
 
 
 ##PACF decaemiento exponencial o se ve como sen(x)
 ## despues del lag p-q
-
-x11()
 autoplot(ggPacf(arima_2_3, lag.max = 50))
 
 
@@ -103,20 +94,12 @@ train_data<-ts(train_data)
 
 
 ##Plots
-
-x11()
-
-
 ggtsdisplay(train_data)
 
 ##ACF
-x11()
-
 ggAcf(train_data, lag=100)
 
 ##PACF
-
-x11()
 ggPacf(train_data, lag=100)
 
 
@@ -134,20 +117,13 @@ adf.test(train_data)
 ##Difereciada
 
 train_data_dif<-diff(train_data)
-
-
-x11()
 ggtsdisplay(train_data_dif)
 
 
 ##ACF
-x11()
-
 ggAcf(train_data_dif, lag=100)
 
 ##PACF
-
-x11()
 ggPacf(train_data_dif, lag=100)
 
 
@@ -158,16 +134,9 @@ adf.test(train_data_dif)
 ##ARIMA buscamos un modelo inicial
 
 arima_dif<-auto.arima(train_data_dif, start.p = 0, max.p = 3, start.q = 0, max.q = 18, trace=1)
-
-
-
-x11()
 autoplot(forecast(arima_dif))
 
 ##Resi
-
-x11()
-
 checkresiduals(arima_dif)
 
 #Ljung-Box test
@@ -175,9 +144,6 @@ checkresiduals(arima_dif)
 #H_0:Los residuales son independientes i.e. es un ruido blanco
 
 ##H_a Existe correlacion entre residuales
-
-
-x11()
 tsdiag(arima_dif)
 
 ##Forecast
@@ -218,8 +184,6 @@ rmse(test_data, pred[,1])
 mae(test_data, pred[,1])
 
 ###Ploteamos el forecast
-
-x11()
 autoplot(forecast(mod))
 
 ##Tiene sentido###
@@ -230,9 +194,6 @@ autoplot(forecast(mod))
 
 mod_1<-Arima(train_data, c(4,1,2))
 summary(mod_1)
-
-
-x11()
 autoplot(forecast(mod_1))
 
 
@@ -255,7 +216,6 @@ w_t <- rnorm(n, mean = 0, sd = 1)
 x_t <- s_t + w_t
 
 # Graficar
-x11()
 plot(t, x_t, type = "l", col = "blue", lwd = 2,
      main = "Serie simulada x_t = s_t + w_t",
      xlab = "t", ylab = "x_t")

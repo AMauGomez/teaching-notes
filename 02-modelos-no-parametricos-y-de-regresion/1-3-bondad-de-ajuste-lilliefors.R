@@ -13,7 +13,6 @@ emp_func <- ecdf(x)
 
 
 #Graficamos
-x11()
 plot(emp_func, 
      main = "CDF Empririca vs.  Normal CDF Teorica",
      xlab = "Valor (x)", 
@@ -53,7 +52,6 @@ ecdf_erup <- ecdf(datos$eruptions)
 
 #Graficamos
 
-x11()
 plot(ecdf_erup, 
      main = "CDF Empririca vs.  Normal CDF Teorica",
      xlab = "Valor (x)", 
@@ -77,7 +75,6 @@ curve(pnorm(x, mean=0, sd=1),
 limites_x <- range(c(datos$eruptions, datos$waiting))
 
 
-x11()
 plot(ecdf(datos$eruptions), 
      col = "blue", 
      main = "Distribuciones Empiricas",
@@ -96,7 +93,6 @@ plot(ecdf(datos$waiting),
      lwd = 2)
 
 
-x11()
 
 ggplot(datos, aes(eruptions)) + stat_ecdf(geom = "step")
 
@@ -108,7 +104,6 @@ n_1<-150
 
 x <- rt(n_1, 4)
 
-x11()
 plot(ecdf(x), 
      main = "CDF Empririca vs.  Normal CDF Teorica",
      xlab = "Valor (x)", 
@@ -148,7 +143,6 @@ jb_test
 
 ##Graficamos
 
-x11()
 
 par(mfrow = c(1, 2)) 
 
@@ -174,7 +168,6 @@ legend("bottomright", legend = c("Datos (t-student)", "Normal Teórica"),
 cor(faithful$eruptions, faithful$waiting, method = "kendall")
 
 
-x11()
 plot(faithful$eruptions, faithful$waiting)
 
 

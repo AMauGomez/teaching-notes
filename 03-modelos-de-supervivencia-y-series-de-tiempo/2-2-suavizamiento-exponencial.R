@@ -15,16 +15,11 @@ getSymbols("CX", src= "yahoo",from= "2002-01-01",to= "2025-06-30",
            periodicity= "monthly")
 base <-CX[,6] #parasolousarlacolumnadelos preciosdecierreajustados
 cemex <-ts(base, start=2001,frequency= 12) #creamoselobjetodeseriesdetiempo
-
-x11()
 plot.ts(cemex)
 
 
 ##Diferenciando
 plot(diff(cemex))
-
-
-x11()
 acf(cemex)
 diff.cemex<-diff(cemex)
 #Prueba de estacionariedad
@@ -48,8 +43,6 @@ cemex_ses$model
 diff.cemex<-diff(cemex)
 
 ses(diff.cemex, h=12)
-
-x11()
 plot(ses(diff.cemex, h=12))
 ##Revisamos las predicciones
 
@@ -61,10 +54,6 @@ head(cemex)
 tail(cemex_ses$fitted)
 
 tail(cemex)
-
-
-
-x11()
 plot(cemex_ses)
 lines(cemex, lty = 1, lwd = 1, col = 'blue')
 lines(cemex_ses$fitted, lty = 2, lwd = 1, col = 'red')
@@ -93,8 +82,6 @@ tail(cemex)
 ##Evaluacion
 
 library(Metrics)
-
-x11()
 autoplot(cemex_holt)
 
 
@@ -102,8 +89,6 @@ autoplot(cemex_holt)
 ###hacemos las predicciones
 
 holt_pred <- predict(cemex_holt, n.ahead = 6, prediction.interval = TRUE, level = 0.95)
-
-x11()
 plot(cemex_holt, holt_pred)
 
 
@@ -122,27 +107,15 @@ cemex_holt_w
 
 
 holt_pred_w<- predict(cemex_holt_w, n.ahead = 12, prediction.interval = TRUE, level = 0.95)
-
-x11()
 autoplot(holt_pred_w)
-
-x11()
 plot(cemex_holt_w, holt_pred_w)
-
-x11()
 plot.ts(cemex)
 
 
 ####Yule walker
 
 ar_model <- ar(cemex, method = "yule-walker")
-
-
-x11()
 pacf(cemex)
-
-
-x11()
 acf(cemex, lag.max = 155)
 # View the estimated AR coefficients
 print(ar_model$ar)

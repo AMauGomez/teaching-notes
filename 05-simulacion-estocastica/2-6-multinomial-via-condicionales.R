@@ -158,7 +158,6 @@ p_comp <- ggplot() +
   theme_minimal() +
   theme(legend.position = "none", plot.title = element_text(face = "bold"))
 
-x11()
 print(p_comp)
 
 # ==============================================================================
@@ -172,5 +171,4 @@ bm <- microbenchmark(
   Nativo_rmultinom = t(rmultinom(50000, size = n_ensayos, prob = probabilidades)),
   times = 50
 )
-x11()
 print(autoplot(bm))

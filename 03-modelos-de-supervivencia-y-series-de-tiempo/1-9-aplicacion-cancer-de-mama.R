@@ -44,7 +44,6 @@ wei<-flexsurvreg(Surv(tiempo, delta) ~ 1, data = datos_1, dist = "weibull")
 wei
 
 
-x11()
 plot(datos$Overall.Survival..Months.)
 
 plot(density(datos$Overall.Survival..Months.))
@@ -55,7 +54,6 @@ plot(density(datos$Overall.Survival..Months.))
 
 ###Supervivencia Lognormal
 
-x11()
 plot(log_nor, type = "survival", ci = F, main = "Probabilidad de Supervivencia", 
      conf.int = F, xlab = "Tiempo (Meses)", ylab = "Probabilidad de Supervivencia")
 
@@ -63,20 +61,17 @@ plot(log_nor, type = "survival", ci = F, main = "Probabilidad de Supervivencia",
 
 ##Hazard acumulado o Riesgo Acumulado
 
-x11()
 plot(log_nor, type = "cumhaz", ci = F, main = "Riesgo Acumulado", conf.int = F, xlab = "Tiempo (Meses)", ylab = "Riesgo Acumulado")
 
 
 
 ##Riesgo realtivo o Hazard
 
-x11()
 plot(log_nor, type = "hazard", ci = F, main = "Riesgo Relativo", xlab = "Tiempo (Meses)", ylab = "Riesgo Relativo")
 
 
 ###Supervivencia
 
-x11()
 plot(log_nor, type = "survival", ci = F, main = "Probabilidad de Supervivencia", 
      conf.int = F, xlab = "Tiempo (Meses)", ylab = "Probabilidad de Supervivencia")
 
@@ -84,14 +79,12 @@ plot(log_nor, type = "survival", ci = F, main = "Probabilidad de Supervivencia",
 
 ##Hazard acumulado o Riesgo Acumulado
 
-x11()
 plot(log_nor, type = "cumhaz", ci = F, main = "Riesgo Acumulado", conf.int = F, xlab = "Tiempo (Meses)", ylab = "Riesgo Acumulado")
 
 
 
 ##Riesgo realtivo o Hazard
 
-x11()
 plot(log_nor, type = "hazard", ci = F, main = "Riesgo Relativo", xlab = "Tiempo (Meses)", ylab = "Riesgo Relativo")
 
 
@@ -100,7 +93,6 @@ plot(log_nor, type = "hazard", ci = F, main = "Riesgo Relativo", xlab = "Tiempo 
 #Graficas de las funciones 
 ###Supervivencia weibull
 
-x11()
 plot(wei, type = "survival", ci = F, main = "Probabilidad de Supervivencia", 
      conf.int = F, xlab = "Tiempo (Meses)", ylab = "Probabilidad de Supervivencia")
 
@@ -108,20 +100,17 @@ plot(wei, type = "survival", ci = F, main = "Probabilidad de Supervivencia",
 
 ##Hazard acumulado o Riesgo Acumulado
 
-x11()
 plot(wei, type = "cumhaz", ci = F, main = "Riesgo Acumulado", conf.int = F, xlab = "Tiempo (Meses)", ylab = "Riesgo Acumulado")
 
 
 
 ##Riesgo realtivo o Hazard
 
-x11()
 plot(wei, type = "hazard", ci = F, main = "Riesgo Relativo", xlab = "Tiempo (Meses)", ylab = "Riesgo Relativo")
 
 
 ###Supervivencia
 
-x11()
 plot(wei, type = "survival", ci = F, main = "Probabilidad de Supervivencia", 
      conf.int = F, xlab = "Tiempo (Meses)", ylab = "Probabilidad de Supervivencia")
 
@@ -129,14 +118,12 @@ plot(wei, type = "survival", ci = F, main = "Probabilidad de Supervivencia",
 
 ##Hazard acumulado o Riesgo Acumulado
 
-x11()
 plot(wei, type = "cumhaz", ci = F, main = "Riesgo Acumulado", conf.int = F, xlab = "Tiempo (Meses)", ylab = "Riesgo Acumulado")
 
 
 
 ##Riesgo realtivo o Hazard
 
-x11()
 plot(wei, type = "hazard", ci = F, main = "Riesgo Relativo", xlab = "Tiempo (Meses)", ylab = "Riesgo Relativo")
 
 
@@ -157,7 +144,6 @@ library("fitdistrplus")
 
 #Prueba basada en la Kurtosis y el sesgo
 
-x11()
 descdist(datos_1$tiempo, boot = 500)
 
 

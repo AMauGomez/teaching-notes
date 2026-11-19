@@ -1,195 +1,52 @@
-library(tidyverse)
-library(readxl)
-library(GGally)
-library(ggplot2)
-library(readxl)
-library(dplyr)
-library(ggplot2)
-library(lmtest)
-library(stats)
-library(FactoMineR)
-library(factoextra)
-library(psych)
-library(readxl)
-library(dplyr)
-library(ggplot2)
-library(lmtest)
-library(stats)
-library(FactoMineR)
-library(factoextra)
-library(psych)
-library(ggcorrplot)
-library(ggplot2)
-library(GGally)
-library(GPArotation)
-library(qgraph)
-library(corrplot)
-library(regclass)
-library(tidyverse)
-library(readxl)
-library(GGally)
-library(ggplot2)
-library(car)
-library(readxl)
-library(readr)
-library(pls)
-library(FactoMineR)
-library(stats)
-library(factoextra)
-library(readxl)
-library(dplyr)
-library(ggplot2)
-library(lmtest)
-library(stats)
-library(FactoMineR)
-library(factoextra)
-library(psych)
-
-datos<-read.csv("datos/CarPrice_Assignment.csv")
-
-str(datos)
-
-datos<-datos[, 9:22]
-
-lm_1<-lm(price~datos$horsepower+datos$enginesize+datos$peakrpm, data=datos)
-
-summary(lm_1)
-
-confint(lm_1)
-
-lm_2<-lm(price~datos$horsepower+datos$enginesize+datos$boreratio, data=datos)
-
-summary(lm_2)
-
-confint(lm_2)
-
-##Creamos el PCA
-
-PCA_centrado=prcomp(datos, center=TRUE, scale=TRUE)
-PCA_centrado
-summary(PCA_centrado)
-
-
-x11()
-fviz_screeplot(PCA_centrado, main="PCA centrado y reescalado",  addlabels = TRUE)
-
-
-
-x11()
-fviz_pca_var(PCA_centrado,col.var="contrib",
-             gradient.cols = c("green", "blue"),
-             repel = TRUE)
-
-
-
-x11()
-fviz_pca_ind(PCA_centrado, col.ind = "cos2", 
-             gradient.cols = c("gray", "purple", "red"),
-             repel = TRUE)
-
-
-
-###Creamos el  modelo a ojo
-
-LM_CLASE<-lm(price~ datos$carlength+ datos$curbweight+datos$horsepower, data=datos)
-summary(LM_CLASE)
-
-x11()
-plot(LM_CLASE)
-
-pairs(datos)
-LM_CLASE_1<-lm(price~ datos$fueltype+datos$enginesize+datos$carwidth+datos$highwaympg+datos$citympg, data=datos)
-summary(LM_CLASE_1)
-
-
-
-###Creamos el modelo con las componentes
-
-modelo_1 <- pcr(datos$price ~ ., 
-                data = datos, scale=TRUE, validation="CV", ncomp=2)
-summary(modelo_1)
-
-
-
-
-
-###stepwise regression
-
-lm_vacio<-lm(price~1, datos)
-summary(lm_vacio)
-
-datos<-datos[,9:22]
-
-lm_completo<-lm(price~., datos)
-summary(lm_completo)
-
-
-##Fordward
-
-lm_forward<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "forward")
-summary(lm_forward)
-
-
-confint(lm_forward)
-
-##Backward
-
-lm_backward<-step(lm_completo, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "backward")
-summary(lm_backward)
-
-
-
-AIC(lm_forward)
-AIC(lm_backward)
-
-BIC(lm_forward)
-BIC(lm_backward)
-
-
-summary(lm_forward)
-confint(lm_forward)
-
-###Both
-
-
-lm_stepwise<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "both")
-summary(lm_stepwise)
-
-lm_2<-lm(price ~ enginesize+ peakrpm + stroke + 
-           compressionratio + carwidth + horsepower, data = datos)
-summary(lm_2)
-
-
-VIF(lm_2)
-
-
-
-a<-predict(lm_forward)
-datos<-cbind(datos,a)
-cbind(a, datos)
-
-
-
-
-
-####Ascombe###
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# =============================================================================
+# 2.4 Selección de modelos: regresión por pasos contra regresión sobre
+#     componentes principales (precio de autos)
+# Objetivo: cuando las variables explicativas están muy correlacionadas,
+#           comparar dos salidas: elegir variables (stepwise) o resumirlas en
+#           componentes principales y hacer la regresión sobre ellos (PCR).
+# Datos:    "Car Price Prediction" (Kaggle), datos/CarPrice_Assignment.csv
+# =============================================================================
+
+library(factoextra)  # gráficas de PCA
+library(pls)         # pcr()
+library(car)         # vif()
+
+datos <- read.csv("datos/CarPrice_Assignment.csv")
+numericas <- c("wheelbase", "carlength", "carwidth", "carheight", "curbweight",
+               "enginesize", "boreratio", "stroke", "compressionratio",
+               "horsepower", "peakrpm", "citympg", "highwaympg")
+datos <- datos[, c(numericas, "price")]
+
+# --- 1. El problema: variables explicativas muy correlacionadas ---------------
+completo <- lm(price ~ ., data = datos)
+sort(round(vif(completo), 1), decreasing = TRUE)   # VIF > 10: multicolinealidad grave
+
+# --- 2. Componentes principales de las explicativas ---------------------------
+pca <- prcomp(datos[, numericas], center = TRUE, scale. = TRUE)
+summary(pca)
+fviz_screeplot(pca, addlabels = TRUE, main = "Varianza explicada por componente")
+fviz_pca_var(pca, col.var = "contrib", gradient.cols = c("green", "blue"), repel = TRUE)
+
+# --- 3. Regresión sobre componentes principales con validación cruzada --------
+set.seed(2024)
+modelo_pcr <- pcr(price ~ ., data = datos, scale = TRUE, validation = "CV")
+summary(modelo_pcr)
+validationplot(modelo_pcr, val.type = "RMSEP", main = "Error de validación cruzada por número de componentes")
+
+# --- 4. Regresión por pasos (AIC) ----------------------------------------------
+vacio <- lm(price ~ 1, data = datos)
+stepwise <- step(vacio, scope = list(lower = vacio, upper = completo), direction = "both", trace = 0)
+summary(stepwise)
+sort(round(vif(stepwise), 1), decreasing = TRUE)
+
+# --- 5. Comparación -------------------------------------------------------------
+# Error de validación cruzada (10 grupos) del modelo stepwise, para comparar con PCR
+set.seed(2024)
+grupo <- sample(rep(1:10, length.out = nrow(datos)))
+err <- sapply(1:10, function(k) {
+  m <- lm(formula(stepwise), data = datos[grupo != k, ])
+  sqrt(mean((datos$price[grupo == k] - predict(m, datos[grupo == k, ]))^2))
+})
+cat("RMSE de validación cruzada, stepwise:", round(mean(err)), "\n")
+# Stepwise conserva variables interpretables; PCR usa todas, pero combinadas en
+# componentes que ya no corresponden a una sola característica del auto.

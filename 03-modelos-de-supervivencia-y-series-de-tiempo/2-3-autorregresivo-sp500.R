@@ -5,18 +5,14 @@ library(ggfortify)
 library(quantmod)
 
 ######
-getSymbols("SPX", src= "yahoo",from= "1995-06-01",to= "2008-06-30",
+getSymbols("^GSPC", src= "yahoo",from= "1995-06-01",to= "2008-06-30",
            periodicity= "monthly")
-base <-SPX[,6] #parasolousarlacolumnadelos preciosdecierreajustados
+base <-GSPC[,6] #parasolousarlacolumnadelos preciosdecierreajustados
 sp <-ts(base, start=1995,frequency= 12) #creamoselobjetodeseriesdetiempo
 
 
 ##Plots
-
-x11()
 plot.ts(sp)
-
-x11()
 plot(decompose(sp))
 
 
@@ -25,10 +21,7 @@ plot(decompose(sp))
 adf.test(sp)
 
 ##Correlaciones
-x11()
 acf(sp)
-
-x11()
 pacf(sp, lag.max = 55)
 
 
@@ -54,7 +47,7 @@ print(ar_model$order)
 ######TAREA 1###
 
 datos<-UKgas
-uk<-ts(base, start=1960)
+uk<-ts(datos, start=1960, frequency=4)
 
 
 plot(uk)

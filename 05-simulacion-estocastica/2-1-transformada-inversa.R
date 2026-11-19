@@ -63,7 +63,6 @@ cat("Curtosis:", Kurt(datos_exp$sample), " (Teórico: 6)\n")
 
 # Gráfico de densidad muestral vs teórica
 
-x11()
 ggplot(datos_exp, aes(x = sample)) +
   geom_histogram(aes(y = after_stat(density)), bins = 35, color = "black", fill = "green", alpha = 0.75) +
   stat_function(fun = function(x) dexp(x, rate = lambda_val), color = "steelblue", linewidth = 1.2) +
@@ -75,7 +74,6 @@ ggplot(datos_exp, aes(x = sample)) +
   theme_minimal()
 
 # Gráfico Q-Q
-x11()
 ggplot(datos_exp, aes(sample = sample)) +
   stat_qq(distribution = qexp, dparams = list(rate = lambda_val), color = "green", alpha = 0.6) +
   stat_qq_line(distribution = qexp, dparams = list(rate = lambda_val), color = "black", linetype = "dashed") +
@@ -101,7 +99,6 @@ bm_exp <- microbenchmark(
 )
 print(bm_exp)
 
-x1()
 autoplot(bm_exp) +
   labs(title = "Comparación de Tiempos de Ejecución: Exponencial(lambda)") +
   theme_minimal()

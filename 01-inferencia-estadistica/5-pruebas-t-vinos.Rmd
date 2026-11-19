@@ -20,7 +20,7 @@ Las observaciones fueron obtenidas bajo los supuestos revisados en clase.
 Primero cargamos nuestra base de datos
 
 ```{r}
-datos<-read_xlsx("datos/wine.xlsx")
+datos<-read_xlsx("datos/wine_clase1_dividida.xlsx")
 datos$Class<-factor(datos$Class)
 ```
 

@@ -1,53 +1,62 @@
 ---
-title: "Aseguradora"
-author: "Gómez Jiménez Aaron Mauricio"
-date: "2024-10-14"
-output: pdf_document
+title: "2.3 Regresión múltiple con variables categóricas: gastos médicos de un seguro"
+author: "Aaron Mauricio Gómez Jiménez"
+output: html_document
 ---
 
-```{r, message=FALSE, include=FALSE}
-library(tidyverse)
-library(readxl)
+```{r, message = FALSE}
 library(GGally)
-library(ggplot2)
-library(car)
+library(lmtest)   # bptest()
 ```
 
+**Tema del temario:** 2.3 Regresión lineal múltiple (variables indicadoras, interacciones y diagnósticos).
 
-Cargamos los datos
-
-```{r}
-datos<-read.csv("datos/insurance.csv")
-```
+**Datos:** *Medical Cost Personal Dataset* (Kaggle), 1,338 asegurados con edad, sexo, IMC, número de hijos, si fuman, región y gasto médico anual (`charges`, en dólares). Archivo: `datos/insurance.csv`.
 
 ```{r}
-datos_1<-datos[,1:3]
-datos_2<-datos[,3:7]
-```
-
-
-
-```{r}
-ggpairs(datos_1,aes(color=sex,alpha=0.5),
-        upper= list(continuous= wrap("cor",size=2.5)))
-```
-
-```{r}
-ggpairs(datos_2,aes(color=region,alpha=0.5),
-        upper= list(continuous= wrap("cor",size=2.5)))
-```
-
-```{r}
+datos <- read.csv("datos/insurance.csv", stringsAsFactors = TRUE)
 summary(datos)
 ```
 
+## Exploración
 
-```{r}
-reg_1<-lm(weight~sex+age+bmi, data=datos)
+```{r, fig.width = 9, fig.height = 6}
+ggpairs(datos, columns = c("age", "bmi", "children", "charges"),
+        aes(colour = smoker, alpha = 0.5), upper = list(continuous = wrap("cor", size = 2.5)))
 ```
 
+El gasto crece con la edad y es mucho mayor entre fumadores. Además, entre fumadores el gasto sube con el IMC y entre no fumadores casi no: eso es una **interacción**.
+
+## Modelo aditivo
+
+Las variables categóricas entran como indicadoras (una categoría de referencia por variable):
 
 ```{r}
-reg_2<-lm(charges~smoke+children)
+reg_1 <- lm(charges ~ age + sex + bmi + children + smoker + region, data = datos)
+summary(reg_1)
 ```
 
+## Modelo con interacción fumador × IMC
+
+```{r}
+reg_2 <- lm(charges ~ age + sex + bmi * smoker + children + region, data = datos)
+summary(reg_2)
+anova(reg_1, reg_2)   # prueba F de la interacción
+```
+
+El coeficiente de `bmi:smokeryes` dice cuántos dólares más sube el gasto por cada punto de IMC entre fumadores que entre no fumadores.
+
+## Diagnósticos
+
+```{r, fig.width = 9, fig.height = 7}
+par(mfrow = c(2, 2)); plot(reg_2); par(mfrow = c(1, 1))
+bptest(reg_2)
+```
+
+Los residuos no tienen varianza constante (Breusch-Pagan) y el gasto es muy asimétrico. Una opción es modelar el logaritmo del gasto, que convierte los coeficientes en efectos porcentuales:
+
+```{r}
+reg_3 <- lm(log(charges) ~ age + sex + bmi * smoker + children + region, data = datos)
+summary(reg_3)$r.squared
+bptest(reg_3)
+```

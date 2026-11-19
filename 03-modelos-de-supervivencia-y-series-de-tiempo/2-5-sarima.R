@@ -21,28 +21,19 @@ plot(JohnsonJohnson, main = "Johnson & Johnson", col = "purple")
 
 
 ###
-x11()
 ggtsdisplay(datos)
 
 
 ##ACF
-x11()
 ggAcf(datos, lag=101)
 
 ##PACF
-x11()
 ggPacf(datos, lag=101)
 
 ###Como es multiplicativa siempre es bueno aplicar log
 
 datos<-log(datos)
-
-
-x11()
 plot(decompose(datos,  type = "multiplicative"))
-
-
-x11()
 plot(decompose(datos,  type = "additive"))
 
 ###Necesito diferenciar?
@@ -58,8 +49,6 @@ datos_dif<-diff(datos)
 adf.test(datos_dif)
 
 ###Revisamos los parametros del ARMA
-
-x11()
 ggtsdisplay(datos_dif)
 
 ###Podemos notar un ARIMA(,,)
@@ -78,12 +67,7 @@ nsdiffs(datos)
 datos_dif_4<-diff(datos_dif, lag = 4)
 
 ##Revisamos de nuevo
-
-x11()
 ggtsdisplay(datos_dif_4)
-
-
-x11()
 ggtsdisplay(datos_dif_4)
 
 checkresiduals(datos_dif_4)
@@ -93,9 +77,6 @@ checkresiduals(datos_dif_4)
 
 mod_1<- Arima(datos, order=c(3,1,0), 
                        seasonal=c(1,1,1))
-
-
-x11()
 checkresiduals(mod_1)
 
 
@@ -106,9 +87,6 @@ auto.arima(datos, trace=T)
 mod_2<-Arima(datos, 
              order=c(2,0,0), 
              seasonal=c(1,1,0))
-
-
-x11()
 checkresiduals(mod_2)
 
 
@@ -155,22 +133,19 @@ library("rugarch")
 library(FinTS)
 
 ######
-getSymbols("SPX", src= "yahoo",from= "1995-06-01",to= "2008-06-30",
+getSymbols("^GSPC", src= "yahoo",from= "1995-06-01",to= "2008-06-30",
            periodicity= "monthly")
-base <-SPX[,4] #parasolousarlacolumnadelos preciosdecierrea
+base <-GSPC[,4] #parasolousarlacolumnadelos preciosdecierrea
 sp <-ts(base, start=1995,frequency= 365) #creamoselobjetodeseriesdetiempo
 
 ###
-x11()
 ggtsdisplay(sp)
 
 
 ##ACF
-x11()
 ggAcf(sp, lag=101)
 
 ##PACF
-x11()
 ggPacf(sp, lag=101)
 
 
@@ -206,7 +181,5 @@ fit
 
 pred<-ugarchforecast(fit, data=sp)
 pred
-
-x11()
-plot(pred)
+plot(pred, which = 1)  # which evita el menú interactivo
 

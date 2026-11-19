@@ -1,67 +1,58 @@
 ---
-title: "Regresión Lineal Múltiple"
-author: "Gómez Jiménez Aaron Mauricio"
-date: "2024-08-22"
-output: pdf_document
+title: "2.3–2.4 Regresión lineal múltiple y selección de variables (precio de autos)"
+author: "Aaron Mauricio Gómez Jiménez"
+output: html_document
 ---
-```{r, message=FALSE, include=FALSE}
-library(tidyverse)
-library(readxl)
-library(GGally)
-library(ggplot2)
+
+```{r, message = FALSE}
+library(dplyr)
 ```
 
-Cargamos los datos
-```{r}
-datos<-read.csv("datos/CarPrice_Assignment.csv")
-```
+**Temas del temario:** 2.3 Regresión lineal múltiple y 2.4 Selección de modelos.
 
-Nuestro objetivo es crear un modelo de predicción del precio de un auto dadas sus caracteristicas. 
-
-Revisaremos brevemente los métodos forward, backward y stepwise
-
-Creamos nuestros modelo nulo (con solo la pendiente) y el modelo completo (con todas las variables explicativas).
+**Datos:** *Car Price Prediction* (Kaggle), 205 autos con dimensiones, motor, rendimiento y precio. Archivo: `datos/CarPrice_Assignment.csv`.
 
 ```{r}
-lm_vacio<-lm(price~1, datos)
-summary(lm_vacio)
+datos <- read.csv("datos/CarPrice_Assignment.csv")
+# Fuera: el nombre del modelo (un nivel por auto, no explica nada)
+datos <- datos |> select(-any_of("car_ID"), -CarName)
+dim(datos)
 ```
 
+Objetivo: un modelo que explique el precio de un auto a partir de sus características.
+
+## Modelo nulo y modelo completo
 
 ```{r}
-lm_completo<-lm(price~, datos)
-summary(lm_completo)
+lm_vacio <- lm(price ~ 1, data = datos)       # solo el intercepto: predice la media
+lm_completo <- lm(price ~ ., data = datos)    # todas las variables
+c(R2_completo = summary(lm_completo)$r.squared, R2_ajustado = summary(lm_completo)$adj.r.squared)
 ```
 
-
+## Un modelo elegido a mano
 
 ```{r}
-LM_CLASE<-lm(price~datos$doornumber+ datos$carlength+ datos$aspiration+ datos$curbweight+datos$cylindernumber+datos$horsepower, data=datos)
-summary(LM_CLASE)
+lm_clase <- lm(price ~ doornumber + carlength + aspiration + curbweight + cylindernumber + horsepower, data = datos)
+summary(lm_clase)
 ```
 
-### Forward
+## Selección automática por AIC
 
-Explicación en clase de su funcionamiento*
+`step()` agrega o quita una variable a la vez y se queda con el cambio que más baja el AIC.
 
 ```{r}
-lm_forward<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "forward")
-summary(lm_forward)
+lm_forward <- step(lm_vacio, scope = list(lower = lm_vacio, upper = lm_completo), direction = "forward", trace = 0)
+lm_backward <- step(lm_completo, scope = list(lower = lm_vacio, upper = lm_completo), direction = "backward", trace = 0)
+lm_stepwise <- step(lm_vacio, scope = list(lower = lm_vacio, upper = lm_completo), direction = "both", trace = 0)
+
+data.frame(metodo = c("A mano", "Forward", "Backward", "Stepwise"),
+           variables = sapply(list(lm_clase, lm_forward, lm_backward, lm_stepwise), function(m) length(coef(m)) - 1),
+           AIC = sapply(list(lm_clase, lm_forward, lm_backward, lm_stepwise), AIC),
+           R2_ajustado = sapply(list(lm_clase, lm_forward, lm_backward, lm_stepwise), function(m) summary(m)$adj.r.squared))
 ```
-
-
-
-### Backward
 
 ```{r}
-lm_backward<-step(lm_completo, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "backward")
-summary(lm_backward)
+formula(lm_stepwise)
 ```
 
-### Stepwise
-
-```{r}
-lm_stepwise<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "both")
-summary(lm_stepwise)
-```
-
+Los tres métodos automáticos no siempre llegan al mismo modelo: forward y backward recorren caminos distintos. Ninguno garantiza el mejor modelo posible, y el que eligen debe revisarse (supuestos, multicolinealidad y sentido de los coeficientes).

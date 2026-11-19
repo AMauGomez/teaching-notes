@@ -19,7 +19,7 @@ Para los viñedos 2 y 3 revise las variables "Alcohol", "Ash", "Magnesium".
 
 Primero cargamos nuestra base de datos
 ```{r}
-datos<-read_xlsx("datos/wine.xlsx")
+datos<-read_xlsx("datos/wine_clase1_dividida.xlsx")
 datos$Class<-factor(datos$Class)
 ```
 

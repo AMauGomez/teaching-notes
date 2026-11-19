@@ -1,124 +1,53 @@
-library(flexsurv)
+# =============================================================================
+# 1.5 Kaplan-Meier · 1.6 modelos paramétricos · 1.7 prueba log-rank
+# Objetivo: estimar la función de supervivencia de pacientes con cáncer de mama,
+#           compararla con modelos paramétricos y probar si difiere entre grupos.
+# Datos:    "Breast Cancer Gene Expression Profiles (METABRIC)" (Kaggle),
+#           datos/Breast Cancer.csv
+# =============================================================================
+
 library(survival)
-library(tidyverse)
-library(ggplot2)
-library(ggsurvfit)
-library(survminer)
-library(dplyr)
+library(survminer)  # ggsurvplot()
+library(flexsurv)   # modelos paramétricos
 
+datos <- read.csv("datos/Breast Cancer.csv", na.strings = c("", "NA"))
 
+# Tiempo: meses de seguimiento. Evento: muerte por la enfermedad.
+# Quienes siguen vivos están censurados. Quienes murieron por otra causa también
+# se tratan como censurados aquí; eso supone que esa otra causa no se relaciona
+# con el riesgo de morir por cáncer (si no, habría que usar riesgos competitivos).
+datos <- subset(datos, Overall.Survival..Months. > 0 & !is.na(Patient.s.Vital.Status))  # 0 meses: sin seguimiento
+datos$tiempo <- datos$Overall.Survival..Months.
+datos$evento <- as.integer(datos$Patient.s.Vital.Status == "Died of Disease")
+table(datos$Patient.s.Vital.Status)
 
-##Cargamos los datos
+# --- 1. Kaplan-Meier ---------------------------------------------------------
+km <- survfit(Surv(tiempo, evento) ~ 1, data = datos)
+km                                   # mediana de supervivencia e intervalo
+summary(km, times = c(60, 120, 180)) # supervivencia a 5, 10 y 15 años
+ggsurvplot(km, data = datos, conf.int = TRUE, risk.table = TRUE,
+           xlab = "Meses", ylab = "Probabilidad de supervivencia", ggtheme = theme_bw())
 
-datos<-read.csv("datos/Breast Cancer.csv")
+# --- 2. Modelos paramétricos: ¿qué distribución describe los tiempos? --------
+param <- lapply(c(exponencial = "exp", weibull = "weibull", lognormal = "lnorm", loglogistica = "llogis"),
+                function(d) flexsurvreg(Surv(tiempo, evento) ~ 1, data = datos, dist = d))
+sapply(param, AIC)                   # menor AIC = mejor ajuste
+plot(param$weibull, xlab = "Meses", ylab = "Supervivencia",
+     main = "Kaplan-Meier (negro) y Weibull (rojo)")
+lines(param$exponencial, col = "blue", ci = FALSE)
+legend("topright", c("Weibull", "Exponencial"), col = c("red", "blue"), lty = 1, bty = "n")
 
-datos<-na.omit(datos)
+# --- 3. Prueba log-rank: ¿difiere la supervivencia entre grupos? -------------
+# Tiene sentido para variables categóricas con pocos grupos y suficientes eventos
+survdiff(Surv(tiempo, evento) ~ Cellularity, data = datos)
+survdiff(Surv(tiempo, evento) ~ Chemotherapy, data = datos)
 
-#Nos interesa saber el tiempo de supervivencia en meses
+# Una variable continuo, como el tamaño del tumor, no se usa directamente:
+# se agrupa primero (o se modela con Cox, en 1-8-cox.R)
+datos$tamano <- cut(datos$Tumor.Size, c(0, 20, 50, Inf), labels = c("<=20 mm", "21-50 mm", ">50 mm"))
+survdiff(Surv(tiempo, evento) ~ tamano, data = datos)
 
-tiempo<-datos$Overall.Survival..Months.
-
-tiempo<-as.numeric(tiempo)
-
-delta<-datos$Patient.s.Vital.Status
-
-delta<-ifelse(delta=="Died of Disease",1,0)
-
-
-datos_1<-cbind(tiempo, delta)
-datos_1<-as.data.frame(datos_1)
-
-#delta<-ifelse(datos_1$tiempo<135 & 117<datos_1$tiempo, 1,0)
-
-
-##de forma que el tiempo indique si hay o no censura se puede hacer con
-
-data<-Surv(tiempo, delta) 
-
-head(data)
-
-
-
-##Haciendo un ajuste KM
-
-km_1<-survfit(data~ 1, data = data, type = "kaplan-meier")
-
-summary(km_1)
-
-###Graficamos la funcion de supervivencia
-
-km_plot<-survfit2(Surv(tiempo, delta) ~ 1, data = data) %>% 
-  ggsurvfit() +
-  labs(
-    x = "Días",
-    y = "Probabilidad de Supervivencia"
-  ) + 
-  add_confidence_interval() +
-  add_risktable()
-
-x11()
-km_plot
-
-
-#######################################Log Rank############33
-###Ahora si quisieramos comparar grupos, cuando es posible comprarlos?
-
-##Log rank test para tipo de celularidad
-
-data=cbind(data, datos$Cellularity)
-data<-as.data.frame(data)
-
-data<-na.omit(data)
-survdiff(Surv(tiempo, delta) ~ datos$Cellularity, data = data)
-
-#sÍ TIENE SENTIDO
-
-##Para la variable histoligias
-
-data=cbind(data, datos$Tumor.Other.Histologic.Subtype)
-data<-as.data.frame(data)
-
-data<-na.omit(data)
-survdiff(Surv(tiempo, delta) ~ datos$Tumor.Other.Histologic.Subtype, data = data)
-
-
-##nO TIENE SENTIDO COMPARAR
-
-##Para la variable tamaño del tumor
-
-data=cbind(data, datos$Tumor.Size)
-data<-as.data.frame(data)
-
-data<-na.omit(data)
-survdiff(Surv(tiempo, delta) ~ datos$Tumor.Size, data = data)
-
-
-##Log rank test para tipo de cancer
-
-data<-na.omit(data)
-data=cbind(data, datos$Cancer.Type.Detailed)
-data<-as.data.frame(data)
-
-data<-na.omit(data)
-survdiff(Surv(tiempo, delta) ~V3, data = data)
-
-
-
-
-
-##Graficando las curvas para cada categoria
-
-cancer <- survfit(Surv(tiempo, delta) ~ V3, data = data)
-
-x11()
-ggsurvplot(cancer, data = data,
-           pval = TRUE, conf.int = TRUE,
-           risk.table = TRUE, 
-           risk.table.col = "strata", 
-           linetype = "strata", 
-           surv.median.line = "hv", 
-           ggtheme = theme_bw(), 
-           palette = c("orange", "blue", "green", "red", "lightblue","yellow" ))
-
-
-
+ajuste <- survfit(Surv(tiempo, evento) ~ tamano, data = datos)
+ggsurvplot(ajuste, data = datos, pval = TRUE, conf.int = TRUE, risk.table = TRUE,
+           surv.median.line = "hv", xlab = "Meses", legend.title = "Tamaño del tumor",
+           ggtheme = theme_bw())

@@ -36,7 +36,7 @@ Por lo tanto no hay diferencias entre los grupos
 Cargamos los datos
 
 ```{r}
-datos<-read_xlsx("datos/wine.xlsx")
+datos<-read_xlsx("datos/wine_clase1_dividida.xlsx")
 datos$Class<-factor(datos$Class)
 ```
 

@@ -8,21 +8,15 @@ births
 nacimientos <- ts(births, frequency=12, start=c(1946,1))
 
 nacimientos<-log(nacimientos)
-
-x11()
 plot.ts(nacimientos)
 
 
 ##Podemos descomponer nuestra serie en sus componentes de interes
-
-x11()
 plot(decompose(nacimientos))
 
 
 ##Para detectar estacionalidad podemos hacer uso del periodograma
 #o de la funcion acf
-
-x11()
 acf(nacimientos,lag.max=150) 
 
 ###Adf Test
@@ -45,8 +39,6 @@ kpss.test(nacimientos, null="Trend")
 
 
 datos<-AirPassengers
-
-x11()
 plot.ts(datos)
 
 
@@ -66,16 +58,11 @@ kpss.test(datos, null="Trend")
 
 library(quantmod)
 
-getSymbols("NVDA", src= "yahoo",from= "2018-01-01",to= "2025-06-30",
+getSymbols("CX", src= "yahoo",from= "2001-01-01",to= "2025-06-30",
            periodicity= "monthly")
-base <-NVDA[,6] #parasolousarlacolumnadelos preciosdecierreajustados
+base <-CX[,6] #parasolousarlacolumnadelos preciosdecierreajustados
 cemex <-ts(base, start=2001,frequency= 12) #creamoselobjetodeseriesdetiempo
-
-x11()
 plot.ts(cemex)
-
-
-x11()
 plot(decompose(cemex))
 
 
@@ -90,21 +77,12 @@ dif_cem<-diff(cemex)
 
 
 adf.test(dif_cem)
-
-
-x11()
 plot(dif_cem)
-
-
-
-x11()
 autoplot(ggAcf(dif_cem, lag.max = 50))
 
 
 ##PACF decaemiento exponencial o se ve como sen(x)
 ## despues del lag p-q
-
-x11()
 autoplot(ggPacf(dif_cem, lag.max = 50))
 
 
@@ -112,8 +90,6 @@ autoplot(ggPacf(dif_cem, lag.max = 50))
 
 
 ##En ocasiones aplicar transformaciones a los datos puede ayudar a reducir la tendencia y esatcionalidad
-
-x11()
 plot.ts(log(cemex))
 
 ##Pruebas de estacionariedad
@@ -130,8 +106,6 @@ PP.test(cemex)
 
 
 kpss.test(cemex, null="Trend")
-
-x11()
 plot(decompose(cemex))
      
 
@@ -167,7 +141,7 @@ cemex_10
 
 ##Definimos el proceso de promedios moviles para a=3
 
-for(i in 1:8){
+for(i in 1:(nrow(cemex_10)-3)){
   a=i+2
   cemex_10$predicciones[i+3]=mean(cemex_10$cem_10[i:a])
 }
@@ -186,7 +160,7 @@ k=6
 A=nrow(cemex_10)-k
 
 
-for(i in 1:8){
+for(i in 1:(nrow(cemex_10)-k)){
   a=i+(k-1)
   cemex_10$predicciones[i+k]=mean(cemex_10$cem_10[i:a])
 }
@@ -216,8 +190,6 @@ Acf(cemex, lag=50)
 
 ma_anter = stats::filter(cemex, filter = rep(1/12, 12), method = 'convolution', sides = 1)
 ma_centrado = stats::filter(cemex, filter = rep(1/12, 12), method = 'convolution', sides = 2)
-
-x11()
 plot(cemex, main = 'CEMEX MA(12)')
 lines(ma_anter, lty = 1, lwd = 1, col = 'blue')
 lines(ma_centrado, lty = 2, lwd = 1, col = 'red')
@@ -238,8 +210,6 @@ Acf(cemex, lag=250)
 
 ma_anter_36 = stats::filter(cemex, filter = rep(1/36, 36), method = 'convolution', sides = 1)
 ma_centrado_36 = stats::filter(cemex, filter = rep(1/36, 36), method = 'convolution', sides = 2)
-
-x11()
 plot(cemex, main = 'CEMEX MA(36)')
 lines(ma_anter_36, lty = 1, lwd = 1, col = 'blue')
 lines(ma_centrado_36, lty = 2, lwd = 1, col = 'red')
@@ -254,8 +224,6 @@ tail(cemex, 25)
 ##Diferenciación
 
 difer<- diff(cemex, differences=1)
-
-x11()
 plot(difer)
 
 PP.test(difer)

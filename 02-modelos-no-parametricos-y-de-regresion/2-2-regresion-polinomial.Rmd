@@ -1,126 +1,78 @@
 ---
-title: "Regresion Polinomial Virus"
-author: "Gómez Jiménez Aaron Mauricio"
-date: "2024-10-21"
-output: pdf_document
+title: "2.2.12 Transformaciones: regresión polinomial y splines"
+author: "Aaron Mauricio Gómez Jiménez"
+output: html_document
 ---
-```{r setup, include=FALSE, message=FALSE}
-library(ggplot2)
-library(tidyverse)
+
+```{r setup, message = FALSE}
 library(splines)
 ```
 
-Nota: Es importante recordar que el término lineal se refiere a la potencia de los parametros $\beta$.
+**Tema del temario:** 2.2.12 Transformaciones.
 
-Cargamos los datos con los que trabajaremos que son observaciones de cargas virales desde el primer día que se observan sintomas hasta cumplir la cuarentena
+**Nota:** el modelo es *lineal* en los parámetros $\beta$, aunque incluya potencias de la variable explicativa. Por eso un polinomio se ajusta con `lm()`.
 
-```{r}
-carga_viral<- c(8.33, 8.23, 7.17, 7.14, 7.31, 7.60, 7.94, 8.30, 8.76, 8.71, 9.71,
-          10.26, 10.91, 11.67, 11.76, 12.81, 13.30, 13.88, 14.59,
-          14.05, 14.48, 14.92, 14.37, 14.63, 15.18, 14.51, 14.34, 
-          13.81, 13.0, 12.5, 11.04, 10.60, 9.5, 9.15, 8.15, 
-          7.14, 7.08,6.78,6.80,5.95,5.51)
-dias <- seq(from=0, to=40, by=1)
-datos <- data.frame(dias=dias, carga_viral=carga_viral)
-head(datos)
-```
-Graficamos los datos
+Datos didácticos: carga viral (en escala logarítmica) medida cada día durante 40 días desde que aparecen los síntomas.
 
 ```{r}
-plot(datos, ylab="carga_viral", xlab="dias", pch=19, ylim=c(0, 16), las=1)
-abline(h = 8.5, col = "blue",lty="dotted")
-text(x=20, y=8, 'contagioso', col='tomato')
+carga_viral <- c(8.33, 8.23, 7.17, 7.14, 7.31, 7.60, 7.94, 8.30, 8.76, 8.71, 9.71,
+                 10.26, 10.91, 11.67, 11.76, 12.81, 13.30, 13.88, 14.59,
+                 14.05, 14.48, 14.92, 14.37, 14.63, 15.18, 14.51, 14.34,
+                 13.81, 13.0, 12.5, 11.04, 10.60, 9.5, 9.15, 8.15,
+                 7.14, 7.08, 6.78, 6.80, 5.95, 5.51)
+datos <- data.frame(dias = 0:40, carga_viral = carga_viral)
+
+plot(datos$dias, datos$carga_viral, ylab = "Carga viral", xlab = "Días", pch = 19, ylim = c(0, 16), las = 1)
+abline(h = 8.5, col = "blue", lty = "dotted")
+text(x = 20, y = 8, "umbral de contagio", col = "tomato")
 ```
 
+## Recta: no captura la forma
 
 ```{r}
-reg_0<-lm(dias~carga_viral-1, data = datos)
-summary(reg_0)
-```
-
-
-Realizamos una regresión lineal
-```{r}
-reg_1<-lm(carga_viral~dias-1, data = datos)
+reg_1 <- lm(carga_viral ~ dias, data = datos)
 summary(reg_1)
 ```
-¿que debemos quitar para mejorar el modelo?
-Quitamos el intercepto
+
+La carga sube y luego baja: una recta no puede describirlo y su $R^2$ es casi nulo.
+
+## Polinomios de grado 2, 3 y 4
 
 ```{r}
-cor(datos)
+reg_2 <- lm(carga_viral ~ dias + I(dias^2), data = datos)
+reg_3 <- lm(carga_viral ~ dias + I(dias^2) + I(dias^3), data = datos)
+reg_4 <- lm(carga_viral ~ dias + I(dias^2) + I(dias^3) + I(dias^4), data = datos)
+anova(reg_1, reg_2, reg_3, reg_4)
 ```
 
-### Modelo Polinomial
+La prueba $F$ secuencial dice cuándo un grado más deja de mejorar el ajuste.
+
+## Splines: polinomios por tramos
+
+Un spline cúbico con nodos en los días 4 y 25 ajusta un polinomio distinto en cada tramo, unido de forma suave.
 
 ```{r}
-reg_pol <- lm(carga_viral ~ dias + I(dias^2), data=datos)
-summary(reg_pol)
+reg_spline <- lm(carga_viral ~ bs(dias, knots = c(4, 25), degree = 3), data = datos)
+summary(reg_spline)$r.squared
+```
+
+## Comparación
+
+```{r}
+plot(datos$dias, datos$carga_viral, ylab = "Carga viral", xlab = "Días", pch = 19, ylim = c(0, 16))
+lines(datos$dias, fitted(reg_1), col = "red", lwd = 3)
+lines(datos$dias, fitted(reg_3), col = "blue", lwd = 3)
+lines(datos$dias, fitted(reg_spline), col = "darkgreen", lwd = 3)
+abline(v = c(4, 25), lty = "dotted", col = "purple")
+legend("bottomright", lwd = 3, col = c("red", "blue", "darkgreen"),
+       legend = c("Recta", "Polinomio de grado 3", "Spline cúbico (nodos en 4 y 25)"), bty = "n")
 ```
 
 ```{r}
-reg_pol_2 <- lm(carga_viral ~ dias + I(dias^2) + I(dias^3), data=datos)
-summary(reg_pol_2)
-```
-```{r}
-reg_pol_3 <- lm(carga_viral ~ dias + I(dias^2) + I(dias^3) +I(dias^4), data=datos)
-summary(reg_pol_3)
+ecm <- function(m) mean(residuals(m)^2)
+data.frame(modelo = c("Recta", "Grado 2", "Grado 3", "Grado 4", "Spline"),
+           ECM = sapply(list(reg_1, reg_2, reg_3, reg_4, reg_spline), ecm),
+           AIC = sapply(list(reg_1, reg_2, reg_3, reg_4, reg_spline), AIC))
 ```
 
-Podemos crear modelos con splines (cortes)
-
-
-```{r}
-reg_spli <- lm(carga_viral~ bs(dias, knots=c(4, 25), degree=3), data=datos)
-summary(reg_spli)
-```
-graficamos los splines
-
-```{r}
-plot(datos, ylab="carga_viral", xlab="dias", pch=19, ylim=c(0, 16), las=1)
-abline(v=4, lty="dotted", col='pink')
-abline(v=25, lty="dotted", col='orange')
-text(x=5, y=0.3, 't=4', col='blue')
-text(x=26, y=0.3, 't=25', col='blue')
-```
-
-
-Comparamos los modelos
-
-```{r}
-plot(datos, ylab="carga_viral", xlab="dias", pch=19, ylim=c(0,16))
-i <- order(dias)
-lines(dias[i], fitted(reg_1)[i], col='red', lwd=3)
-lines(dias[i], fitted(reg_pol_2)[i], col='blue', lwd=3)
-lines(dias[i], fitted(reg_spli)[i], col='green', lwd=3)
-legend("bottomright", lwd=c(3, 3, 3), col=c('red', 'blue', 'green'),
-       legend=c("Regresion Lineal", 
-                "Regresión Polinomial grado 3",
-                "Regresion Polinomial con splins"), bty="n")
-abline(v=c(4, 25), lty='dotted', col="purple") 
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r}
-y_true <- softdrink$tiempo
-y_hat1 <- predict(mod1, newdata=softdrink)
-y_hat2 <- predict(mod2, newdata=softdrink)
-
-mse1 <- mean((y_true - y_hat1)^2)
-mse2 <- mean((y_true - y_hat2)^2)
-cbind(mse1, mse2)
-```
-
-
+El error dentro de la muestra siempre baja al agregar parámetros; el AIC los penaliza. Para elegir con datos nuevos habría que usar validación cruzada.

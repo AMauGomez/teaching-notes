@@ -17,10 +17,9 @@ Código de mis ayudantías y material complementario, ordenado según el temario
 | Tema | Código |
 |---|---|
 | 2.1 Series como procesos estocásticos: caminata aleatoria | [`2-1-caminata-aleatoria.R`](2-1-caminata-aleatoria.R) |
-| Preparación de bases de series de tiempo | [`2-1-preparacion-de-bases.R`](2-1-preparacion-de-bases.R) |
 | 2.2 Tendencia, estacionalidad y estacionariedad | [`2-2-pruebas-de-estacionariedad.R`](2-2-pruebas-de-estacionariedad.R) · [`2-2-estacionariedad-y-promedios-moviles.R`](2-2-estacionariedad-y-promedios-moviles.R) |
 | 2.2 Suavizamiento exponencial y Holt-Winters | [`2-2-suavizamiento-exponencial.R`](2-2-suavizamiento-exponencial.R) · [`2-2-holt-winters.R`](2-2-holt-winters.R) |
-| 2.3.1 Modelos autorregresivos | [`2-3-autorregresivo-tesla.R`](2-3-autorregresivo-tesla.R) |
+| 2.3.1 Modelos autorregresivos | [`2-3-autorregresivo-sp500.R`](2-3-autorregresivo-sp500.R) |
 | 2.3.2–2.3.3 Promedios móviles y ARMA: simulación e identificación con ACF/PACF | *pendiente* |
 | 2.4–2.5 Construcción de modelos ARIMA y pronóstico | [`2-4-arima.R`](2-4-arima.R) · [`2-4-arima-varias-bases.R`](2-4-arima-varias-bases.R) |
 | Extensión: modelos estacionales SARIMA | [`2-5-sarima.R`](2-5-sarima.R) |

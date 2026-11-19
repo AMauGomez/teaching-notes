@@ -1,55 +1,65 @@
 ---
-title: "Multicolinealidad"
-author: "Gómez Jiménez Aaron Mauricio"
-date: "2024-11-04"
-output: pdf_document
+title: "2.3.12 Multicolinealidad y sus efectos"
+author: "Aaron Mauricio Gómez Jiménez"
+output: html_document
 ---
 
-```{r, message=FALSE}
-library(dplyr)
+```{r, message = FALSE}
 library(readxl)
-library(MASS)
+library(car)   # vif()
 ```
 
-Cargamos los datos
+**Tema del temario:** 2.3.12 Multicolinealidad y sus efectos.
+
+**Datos:** *Polycystic ovary syndrome (PCOS)* (Kaggle), 541 pacientes con medidas clínicas y hormonales. Archivo: `datos/PCOS_data_without_infertility_ready.xlsx`.
 
 ```{r}
-datos<-read_xlsx("datos/PCOS_data_without_infertility_ready.xlsx", sheet=2)
-datos<-datos[,-c(1,11,14,22,28)]
+datos <- read_xlsx("datos/PCOS_data_without_infertility_ready.xlsx", sheet = 2, .name_repair = "minimal")
+datos <- datos[, -c(1, 11, 14, 22, 28)]
+datos <- datos[, names(datos) != "Blood Group"]   # código de grupo sanguíneo: categórica, no numérica
+names(datos) <- make.names(names(datos))
+dim(datos)
 ```
 
-Queremos hacer una regresión que nos ayude a determinar la edad de la persona usando las otras variables
+Pregunta didáctica: ¿qué variables explican la **edad** de la paciente?
 
+## Variables que miden casi lo mismo
+
+Varias variables son funciones de otras: el IMC es peso entre estatura al cuadrado, el índice cintura/cadera es un cociente de dos medidas que también están en la base, y lo mismo pasa con FSH/LH.
 
 ```{r}
-lm_vacio<-lm(datos$`Age (yrs)`~1, datos)
-summary(lm_vacio)
+vars <- c("Weight..Kg.", "Height.Cm.", "BMI", "Hip.inch.", "Waist.inch.", "FSH.mIU.mL.", "LH.mIU.mL.")
+round(cor(datos[, vars]), 2)
 ```
+
+## El factor de inflación de varianza (VIF)
+
+$\text{VIF}_j = 1/(1 - R_j^2)$, donde $R_j^2$ es el $R^2$ de la regresión de la variable $j$ contra las demás. Mide cuántas veces crece la varianza de $\hat\beta_j$ por la correlación con el resto. Valores mayores a 10 suelen considerarse graves.
 
 ```{r}
-lm_completo<-lm(datos$`Age (yrs)` ~., datos)
-summary(lm_completo)
+completo <- lm(Age..yrs. ~ ., data = datos)
+sort(round(vif(completo), 1), decreasing = TRUE)
 ```
+
+## El efecto: coeficientes inestables
+
+Comparamos el coeficiente del peso y su error estándar con y sin las variables que lo repiten (IMC y estatura):
 
 ```{r}
-lm_forward
+con_imc <- lm(Age..yrs. ~ Weight..Kg. + Height.Cm. + BMI, data = datos)
+sin_imc <- lm(Age..yrs. ~ Weight..Kg., data = datos)
+rbind(con_IMC_y_estatura = summary(con_imc)$coefficients["Weight..Kg.", 1:2],
+      solo_peso = summary(sin_imc)$coefficients["Weight..Kg.", 1:2])
 ```
 
+Con las tres variables juntas, el error estándar del peso se multiplica: el modelo no puede separar el efecto del peso del de algo que se calcula con él. El $R^2$ casi no cambia, porque la información es la misma.
+
+## Remedio: quitar lo redundante
 
 ```{r}
-lm_forward<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "forward")
-summary(lm_forward)
+reducido <- update(completo, . ~ . - BMI - Waist.Hip.Ratio..W.V. - FSH.LH)
+sort(round(vif(reducido), 1), decreasing = TRUE)
+c(R2_completo = summary(completo)$r.squared, R2_reducido = summary(reducido)$r.squared)
 ```
 
-
-```{r}
-lm_backward<-step(lm_completo, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "backward")
-summary(lm_backward)
-```
-
-
-
-```{r}
-lm_stepwise<-step(lm_vacio, scope = list(lower=lm_vacio, upper=lm_completo ), direction = "both")
-summary(lm_stepwise)
-```
+Al quitar las variables que son funciones de otras, los VIF bajan y el $R^2$ apenas se mueve. Otras opciones: combinar variables con componentes principales o usar regresión ridge.

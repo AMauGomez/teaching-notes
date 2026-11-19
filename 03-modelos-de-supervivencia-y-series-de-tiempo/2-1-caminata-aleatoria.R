@@ -10,14 +10,12 @@ library(tidyverse)
 ##Ruido Blanco
 
 w = rnorm(500,0,1)
-abline(y=0)
-x11()
 plot.ts(w, main="Ruido Blanco")
 
 
 ###Ruido blanco con sigma 
 ##Moving Average
-v = filter(w, sides=2, filter=rep(1/3,3))
+v = stats::filter(w, sides=2, filter=rep(1/3,3))
 plot.ts(v, ylim=c(-3,3), main="Promedio Moviles")
 
 
@@ -25,22 +23,19 @@ plot.ts(v, ylim=c(-3,3), main="Promedio Moviles")
 set.seed(123)
 w = rnorm(1000)
 x = cumsum(w) 
-x11()
 plot.ts(x, ylim=c(-5,55), main="Caminata Aleatoria", ylab='')
 lines(x, col=4); abline(h=0, col=4, lty=2)
 
 ###Ar(1)
 
 ar_1<-arima.sim(list(order = c(1, 0, 0), ar=c(.8)),n = 200)
-
-x11()
 autoplot(ar_1)
 
 
 
-ar_2<-arima.sim(list(order = c(1, 0, 0), ar=c(1)),n = 200)
-
-x11()
+# Con phi = 1 el proceso ya no es estacionario: arima.sim() se niega a simularlo
+# ('ar' part of model is not stationary). Es una caminata aleatoria:
+ar_2<-ts(cumsum(rnorm(200)))
 autoplot(ar_2)
 
 
@@ -59,15 +54,8 @@ for (i in 2:n) {
 ###A time series
 
 Ar_1_1<- ts(x)
-
-x11()
 plot(Ar_1_1, main = "AR(1)",
      xlab = "Time", ylab = "Value", col = "blue")
-
-
-
-
-x11()
 ggtsdisplay(Ar_1_1)
 
 
@@ -83,13 +71,8 @@ for (i in 2:n) {
 }
 
 Ar_1_2<- ts(y)
-
-x11()
 plot(Ar_1_2, main = "AR(1.1)",
      xlab = "Time", ylab = "Value", col = "blue")
-
-
-x11()
 ggtsdisplay(Ar_1_2)
 
 

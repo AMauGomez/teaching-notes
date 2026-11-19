@@ -173,7 +173,6 @@ df_bidimensional <- data.frame(
   Estado = ifelse(u_p <= ratio, "Aceptado", "Rechazado")
 )
 
-x11()
 ggplot() +
   geom_point(data = df_bidimensional, aes(x = x, y = y, color = Estado), alpha = 0.5, size = 1.2) +
   stat_function(fun = function(x) dbeta(x, a_param, b_param), color = "black", linewidth = 1.2) +
@@ -188,7 +187,6 @@ ggplot() +
   theme_minimal()
 
 # Histograma Muestral vs Densidad Teórica
-x11()
 ggplot(data.frame(x = muestra), aes(x = x)) +
   geom_histogram(aes(y = after_stat(density)), bins = 35, color = "black", fill = "darkred", alpha = 0.75) +
   stat_function(fun = function(x) dbeta(x, a_param, b_param), color = "steelblue", linewidth = 1.2) +
@@ -201,7 +199,6 @@ ggplot(data.frame(x = muestra), aes(x = x)) +
 
 # Gráfico Q-Q
 
-x11()
 ggplot(data.frame(sample = muestra), aes(sample = sample)) +
   stat_qq(distribution = qbeta, dparams = list(shape1 = a_param, shape2 = b_param), color = "darkred", alpha = 0.6) +
   stat_qq_line(distribution = qbeta, dparams = list(shape1 = a_param, shape2 = b_param), color = "black", linetype = "dashed") +
@@ -228,5 +225,4 @@ bm_out <- microbenchmark(
   Nativo_R    = rbeta(5000, shape1 = a_param, shape2 = b_param),
   times = 100
 )
-x11()
 autoplot(bm_out)
