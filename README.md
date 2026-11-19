@@ -9,7 +9,7 @@ Código en R (y Python) para mis sesiones como **ayudante (teaching assistant) e
 | [**Inferencia Estadística**](01-inferencia-estadistica/) | 1541 | Todo el temario, como un caso de estudio ([cdmx-pedestrian-crashes](https://github.com/AMauGomez/cdmx-pedestrian-crashes)) |
 | [**Modelos No Paramétricos y de Regresión**](02-modelos-no-parametricos-y-de-regresion/) | 1639 | Todo el temario: código por tema + un caso de estudio ([mortgage-pricing-regression](https://github.com/AMauGomez/mortgage-pricing-regression)) |
 | [**Modelos de Supervivencia y de Series de Tiempo**](03-modelos-de-supervivencia-y-series-de-tiempo/) | — | 10 de 13 |
-| [**Análisis Multivariado**](04-analisis-multivariado/) | 1815 | 13 de 13 (dos temas en [mexico-rates-risk](https://github.com/AMauGomez/mexico-rates-risk)) |
+| [**Análisis Multivariado**](04-analisis-multivariado/) | 1815 | 13 de 13 (dos temas en [mexican-rates-risk](https://github.com/AMauGomez/mexican-rates-risk)) |
 | [**Simulación Estocástica**](05-simulacion-estocastica/) | 0873 | 7 de 13 |
 
 ## Sobre este material

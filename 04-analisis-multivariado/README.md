@@ -6,7 +6,7 @@ Código de mis ayudantías y material complementario, ordenado según el temario
 
 | Tema | Código |
 |---|---|
-| 1.1 Descomposiciones espectral y en valores singulares · 1.4 normal multivariada | en el proyecto [mexico-rates-risk](https://amaugomez.github.io/mexico-rates-risk/): SVD de la curva de tasas (nivel, pendiente, curvatura) y pruebas de normalidad multivariada (Mardia, Henze–Zirkler, Q-Q de Mahalanobis) |
+| 1.1 Descomposiciones espectral y en valores singulares · 1.4 normal multivariada | en el proyecto [mexican-rates-risk](https://amaugomez.github.io/mexican-rates-risk/): SVD de la curva de tasas (nivel, pendiente, curvatura) y pruebas de normalidad multivariada (Mardia, Henze–Zirkler, Q-Q de Mahalanobis) |
 | 1.5 T² de Hotelling | [`1-5-t2-de-hotelling.R`](1-5-t2-de-hotelling.R) |
 
 ## 2. Análisis descriptivo de datos multivariados
@@ -29,7 +29,7 @@ Código de mis ayudantías y material complementario, ordenado según el temario
 | Tema | Código |
 |---|---|
 | 4.1 Análisis de conglomerados (jerárquicos y k-medias) | [`4-1-conglomerados-ruspini.Rmd`](4-1-conglomerados-ruspini.Rmd) · [`4-1-conglomerados-autos.R`](4-1-conglomerados-autos.R) |
-| 4.1.4 Conglomerados basados en modelos | en el proyecto [mexico-rates-risk](https://amaugomez.github.io/mexico-rates-risk/): mezclas gaussianas elegidas por BIC con `mclust` (curva trimestral y tipo de cambio diario) |
+| 4.1.4 Conglomerados basados en modelos | en el proyecto [mexican-rates-risk](https://amaugomez.github.io/mexican-rates-risk/): mezclas gaussianas elegidas por BIC con `mclust` (curva trimestral y tipo de cambio diario) |
 | 4.2 Análisis discriminante lineal y cuadrático | [`4-2-discriminante-sp500.Rmd`](4-2-discriminante-sp500.Rmd) |
 
 ## Temas complementarios
